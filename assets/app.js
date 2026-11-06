@@ -1,346 +1,325 @@
-/* Hunt & Haul roadmap: renders data/plan.json as an interactive tree + phase board. No build step. */
+/* Hunt & Haul roadmap. Reads data/plan.json and renders: overview, one page per area
+   (click an item to open its details in place), a phase timeline, and search. No build step. */
 (function () {
   "use strict";
 
-  const STORE_KEY = "hh-roadmap-v1";
-  const STATUS_LABEL = { planned: "Planned", "in-progress": "In progress", blocked: "Blocked", done: "Done" };
+  const STORE_KEY = "hh-roadmap-v2";
+  const STATUS = { planned: "Planned", "in-progress": "In progress", blocked: "Blocked", done: "Done" };
   const STATUS_ORDER = ["done", "in-progress", "blocked", "planned"];
-  const PRIORITY_LABEL = { P0: "P0 · must have", P1: "P1 · should have", P2: "P2 · nice to have" };
+  const PRIORITY = { P0: "Must have", P1: "Should have", P2: "Nice to have" };
 
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const chevron = '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
 
-  const state = {
+  const S = {
     plan: null,
-    byId: new Map(),       // id -> { node, parent, depth }
-    blocks: new Map(),     // id -> [ids that depend on it]
-    expanded: new Set(),
-    selected: null,
-    view: "tree",
-    filters: { q: "", status: "", priority: "", owner: "", phase: null },
+    byId: new Map(),     // id -> { node, parent, depth }
+    unblocks: new Map(), // id -> [ids that depend on it]
+    open: new Set(),
+    route: "overview",
+    tlFilter: "",
+    q: "",
   };
 
-  /* ---------- persistence (per-viewer convenience only) ---------- */
-  function loadPrefs() {
-    try {
-      const raw = localStorage.getItem(STORE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch (e) { return null; }
-  }
-  function savePrefs() {
-    try {
-      localStorage.setItem(STORE_KEY, JSON.stringify({ expanded: [...state.expanded], view: state.view }));
-    } catch (e) { /* storage unavailable */ }
-  }
+  /* ---------- per-viewer memory (optional) ---------- */
+  function loadPrefs() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) { return null; } }
+  function savePrefs() { try { localStorage.setItem(STORE_KEY, JSON.stringify({ open: [...S.open] })); } catch (e) { /* ignore */ } }
 
-  /* ---------- data ---------- */
+  /* ---------- data helpers ---------- */
   function index(node, parent, depth) {
-    state.byId.set(node.id, { node, parent, depth });
-    for (const d of node.dependsOn || []) {
-      if (!state.blocks.has(d)) state.blocks.set(d, []);
-      state.blocks.get(d).push(node.id);
-    }
+    S.byId.set(node.id, { node, parent, depth });
+    (node.dependsOn || []).forEach((d) => { if (!S.unblocks.has(d)) S.unblocks.set(d, []); S.unblocks.get(d).push(node.id); });
     (node.children || []).forEach((c) => index(c, node, depth + 1));
   }
-  function ancestors(id) {
-    const out = [];
-    let cur = state.byId.get(id);
-    while (cur && cur.parent) { out.unshift(cur.parent); cur = state.byId.get(cur.parent.id); }
-    return out;
+  const get = (id) => S.byId.get(id);
+  const areas = () => S.plan.root.children || [];
+  function chain(id) { const out = []; let e = get(id); while (e && e.parent) { out.unshift(e.parent); e = get(e.parent.id); } return out; }
+  function areaOf(id) { const e = get(id); if (!e || e.depth === 0) return null; if (e.depth === 1) return e.node; return chain(id)[1]; }
+  function descendants(n) { const out = []; (function w(x) { (x.children || []).forEach((c) => { out.push(c); w(c); }); })(n); return out; }
+  function counts(nodes) { const c = { planned: 0, "in-progress": 0, blocked: 0, done: 0 }; nodes.forEach((n) => c[n.status]++); return c; }
+  function rollup(n) {
+    const all = [n, ...descendants(n)];
+    if (all.some((x) => x.status === "blocked")) return "blocked";
+    if (all.some((x) => x.status === "in-progress")) return "in-progress";
+    if (all.every((x) => x.status === "done")) return "done";
+    return "planned";
   }
-  function descendants(node) {
-    const out = [];
-    (function walk(n) { (n.children || []).forEach((c) => { out.push(c); walk(c); }); })(node);
-    return out;
-  }
-  function statusCounts(nodes) {
-    const c = { planned: 0, "in-progress": 0, blocked: 0, done: 0 };
-    nodes.forEach((n) => { c[n.status] = (c[n.status] || 0) + 1; });
-    return c;
-  }
-  function allNodes() { return [...state.byId.values()].map((v) => v.node); }
-
-  /* ---------- filtering ---------- */
-  function filterActive() {
-    const f = state.filters;
-    return !!(f.q || f.status || f.priority || f.owner || f.phase);
-  }
-  function matches(node) {
-    const f = state.filters;
-    if (f.status && node.status !== f.status) return false;
-    if (f.priority && node.priority !== f.priority) return false;
-    if (f.owner && node.owner !== f.owner) return false;
-    if (f.phase && node.phase !== f.phase) return false;
-    if (f.q) {
-      const hay = [node.title, node.summary, node.id, node.notes, ...(node.deliverables || [])].join(" ").toLowerCase();
-      if (!hay.includes(f.q.toLowerCase())) return false;
-    }
-    return true;
-  }
-  function visibleSet() {
-    if (!filterActive()) return null;
-    const vis = new Set();
-    for (const n of allNodes()) {
-      if (matches(n)) {
-        vis.add(n.id);
-        ancestors(n.id).forEach((a) => vis.add(a.id));
-      }
-    }
-    return vis;
-  }
-  function highlight(text) {
-    const q = state.filters.q;
-    const safe = esc(text);
-    if (!q) return safe;
-    const i = text.toLowerCase().indexOf(q.toLowerCase());
-    if (i < 0) return safe;
-    return esc(text.slice(0, i)) + "<mark>" + esc(text.slice(i, i + q.length)) + "</mark>" + esc(text.slice(i + q.length));
+  const phase = (id) => S.plan.meta.phases.find((p) => p.id === id) || { id, name: "" };
+  function phaseRange(n) {
+    const ps = [n, ...descendants(n)].map((x) => x.phase);
+    const lo = Math.min(...ps), hi = Math.max(...ps);
+    return lo === hi ? `Phase ${lo}` : `Phases ${lo}–${hi}`;
   }
 
   /* ---------- small pieces ---------- */
-  const statusPill = (s) => `<span class="status st-${esc(s)}">${esc(STATUS_LABEL[s] || s)}</span>`;
-  const priChip = (p) => `<span class="pri pri-${esc(p)}" title="${esc(PRIORITY_LABEL[p] || p)}">${esc(p)}</span>`;
-  function phaseName(id) {
-    const p = state.plan.meta.phases.find((x) => x.id === id);
-    return p ? p.name : "";
+  function bar(c) {
+    const total = Object.values(c).reduce((a, b) => a + b, 0) || 1;
+    const col = { done: "var(--st-done)", "in-progress": "var(--st-progress)", blocked: "var(--st-blocked)", planned: "var(--st-planned)" };
+    const label = STATUS_ORDER.map((s) => `${c[s]} ${STATUS[s].toLowerCase()}`).join(", ");
+    return `<div class="bar" role="img" aria-label="${label}">${STATUS_ORDER.map((s) => c[s] ? `<span style="width:${(c[s] / total) * 100}%;background:${col[s]}"></span>` : "").join("")}</div>`;
   }
-  function bar(counts) {
-    const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
-    const colors = { done: "var(--st-done)", "in-progress": "var(--st-progress)", blocked: "var(--st-blocked)", planned: "var(--line-strong)" };
-    return `<div class="bar" role="img" aria-label="${STATUS_ORDER.map((s) => `${counts[s]} ${STATUS_LABEL[s].toLowerCase()}`).join(", ")}">` +
-      STATUS_ORDER.map((s) => counts[s] ? `<span style="width:${(counts[s] / total) * 100}%;background:${colors[s]}"></span>` : "").join("") +
-      "</div>";
-  }
-  const chevron = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  const chip = (s) => `<span class="chip ${s}"><span class="dot ${s}"></span>${STATUS[s]}</span>`;
+  const legend = (c) => `<div class="legend">${STATUS_ORDER.map((s) => `<span><span class="dot ${s}"></span>${c[s]} ${STATUS[s].toLowerCase()}</span>`).join("")}</div>`;
 
-  /* ---------- header + phases ---------- */
-  function renderHeader() {
-    const m = state.plan.meta;
-    $("title").textContent = m.title;
-    $("lede").textContent = m.subtitle;
-    $("ver").textContent = `v${m.version}`;
-    $("updated").textContent = m.updated;
-    $("loop").innerHTML = m.loop.map((s, i) =>
-      `<span class="loop-step">${esc(s)}</span>${i < m.loop.length - 1 ? '<span class="loop-arrow" aria-hidden="true">→</span>' : ""}`
-    ).join("") + '<span class="loop-back">↺ repeat</span>';
-    const sel = $("f-owner");
-    sel.innerHTML = '<option value="">All owners</option>' +
-      Object.entries(m.owners).map(([k, v]) => `<option value="${esc(k)}">${esc(k)} · ${esc(v)}</option>`).join("");
-  }
-
-  function renderPhases() {
-    const nodes = allNodes().filter((n) => n.id !== state.plan.root.id);
-    $("phases").innerHTML = state.plan.meta.phases.map((p) => {
-      const items = nodes.filter((n) => n.phase === p.id);
-      const c = statusCounts(items);
-      const on = state.filters.phase === p.id;
-      return `<button type="button" class="phase" data-phase="${p.id}" aria-pressed="${on}">
-        <span class="phase-num">PHASE ${p.id}</span>
-        <span class="phase-name">${esc(p.name)}</span>
-        <span class="phase-goal">${esc(p.goal)}</span>
-        ${bar(c)}
-        <span class="phase-meta">${items.length} items · ${c.done} done</span>
-      </button>`;
-    }).join("");
-  }
-
-  /* ---------- tree view ---------- */
-  function renderTree() {
-    const vis = visibleSet();
-    const forceOpen = filterActive();
-    const sel = state.selected;
-
-    function li(node, depth) {
-      if (vis && !vis.has(node.id)) return "";
-      const kids = node.children || [];
-      const open = forceOpen || state.expanded.has(node.id);
-      const dim = vis && !matches(node);
-      const total = kids.length ? descendants(node).length : 0;
-      const caret = kids.length
-        ? `<button type="button" class="caret" data-toggle="${esc(node.id)}" aria-expanded="${open}" aria-label="${open ? "Collapse" : "Expand"} ${esc(node.title)}">${chevron}</button>`
-        : '<span class="caret leaf" aria-hidden="true"></span>';
-      const row = `<div class="node${node.id === sel ? " is-selected" : ""}${dim ? " is-dim" : ""}">
-          ${caret}
-          <button type="button" class="node-main" data-select="${esc(node.id)}" aria-current="${node.id === sel ? "true" : "false"}">
-            <span class="node-title">${highlight(node.title)}</span>
-            <span class="tags">
-              ${total ? `<span class="kids">${total}</span>` : ""}
-              ${priChip(node.priority)}
-              <span class="ph">Ph ${node.phase}</span>
-              <span class="own">${esc(node.owner)}</span>
-              ${statusPill(node.status)}
-            </span>
-          </button>
-        </div>`;
-      const sub = kids.length && open ? `<ul>${kids.map((k) => li(k, depth + 1)).join("")}</ul>` : "";
-      return `<li class="depth-${Math.min(depth, 2)}">${row}${sub}</li>`;
-    }
-    const html = li(state.plan.root, 0);
-    $("view").innerHTML = html ? `<ul class="tree" role="tree">${html}</ul>` : '<p class="empty" style="padding:20px">No items match these filters.</p>';
-  }
-
-  /* ---------- board view (by phase) ---------- */
-  function renderBoard() {
-    const items = allNodes().filter((n) => state.byId.get(n.id).depth >= 2 && (!filterActive() || matches(n)));
-    const phases = state.filters.phase ? state.plan.meta.phases.filter((p) => p.id === state.filters.phase) : state.plan.meta.phases;
-    $("view").innerHTML = `<div class="board">` + phases.map((p) => {
-      const col = items.filter((n) => n.phase === p.id)
-        .sort((a, b) => a.priority.localeCompare(b.priority) || STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
-      return `<div class="col"><h3>${p.id} · ${esc(p.name)} <small>${col.length}</small></h3>` +
-        (col.length ? col.map((n) => {
-          const path = ancestors(n.id).slice(1).map((a) => a.title).join(" › ");
-          return `<button type="button" class="card${n.id === state.selected ? " is-selected" : ""}" data-select="${esc(n.id)}">
-            <span class="card-path">${esc(path)}</span>
-            <span class="card-title">${highlight(n.title)}</span>
-            <span class="card-tags">${priChip(n.priority)} ${statusPill(n.status)} <span class="own">${esc(n.owner)}</span></span>
-          </button>`;
-        }).join("") : '<p class="empty">Nothing here.</p>') + "</div>";
-    }).join("") + "</div>";
-  }
-
-  function renderView() {
-    if (state.view === "board") renderBoard(); else renderTree();
-    $("v-tree").setAttribute("aria-pressed", String(state.view === "tree"));
-    $("v-board").setAttribute("aria-pressed", String(state.view === "board"));
-    $("expand-all").hidden = state.view !== "tree";
-    $("collapse-all").hidden = state.view !== "tree";
-    const total = state.byId.size;
-    const shown = filterActive() ? allNodes().filter(matches).length : total;
-    $("count").textContent = filterActive() ? `${shown} of ${total} items match` : `${total} items`;
-  }
-
-  /* ---------- detail ---------- */
-  function renderDetail() {
-    const box = $("detail");
-    const entry = state.byId.get(state.selected);
-    if (!entry) { box.innerHTML = ""; return; }
-    const n = entry.node;
-    const owners = state.plan.meta.owners;
-    const anc = ancestors(n.id);
-    const desc = descendants(n);
-    const deps = (n.dependsOn || []).filter((d) => state.byId.has(d));
-    const blocks = state.blocks.get(n.id) || [];
-    const list = (arr, cls) => arr && arr.length ? `<ul class="${cls}">${arr.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : '<p class="empty">None listed yet.</p>';
-    const chip = (id) => { const t = state.byId.get(id).node; return `<button type="button" class="chip" data-select="${esc(id)}">${esc(t.title)} ${statusPill(t.status)}</button>`; };
-
-    box.innerHTML = `<div class="detail-inner">
-      <div class="detail-actions">
-        <button type="button" class="btn close-sheet" id="close-sheet">Close</button>
-        <button type="button" class="btn" id="copy-link">Copy link to this item</button>
-        <span class="copied" id="copied" hidden>Link copied</span>
+  /* ---------- sidebar ---------- */
+  function renderSidebar() {
+    const cur = S.q ? "" : (S.route.startsWith("phase-") ? "timeline" : (areaOf(S.route) ? areaOf(S.route).id : S.route));
+    const item = (href, label, extra, current) =>
+      `<a class="nav-item" href="#${href}"${current ? ' aria-current="page"' : ""}>${extra || ""}<span>${esc(label)}</span></a>`;
+    $("sidebar").innerHTML = `<div class="sidebar-scroll">
+      <div class="nav-group">
+        ${item("overview", "Overview", "", cur === "overview")}
+        ${item("timeline", "Build order", "", cur === "timeline")}
       </div>
-      ${anc.length ? `<nav class="crumbs" aria-label="Path">${anc.map((a) => `<button type="button" data-select="${esc(a.id)}">${esc(a.title)}</button>`).join('<span class="sep">›</span>')}</nav>` : ""}
-      <h2>${esc(n.title)}</h2>
-      <p class="summary">${esc(n.summary)}</p>
-      <dl class="facts">
-        <div class="fact"><dt>Status</dt><dd>${statusPill(n.status)}</dd></div>
-        <div class="fact"><dt>Priority</dt><dd>${esc(PRIORITY_LABEL[n.priority] || n.priority)}</dd></div>
-        <div class="fact"><dt>Phase</dt><dd>${n.phase} · ${esc(phaseName(n.phase))}</dd></div>
-        <div class="fact"><dt>Owner</dt><dd>${esc(n.owner)} · ${esc(owners[n.owner] || "")}</dd></div>
-        <div class="fact"><dt>Estimate</dt><dd>${esc(n.estimate || "Not estimated")}</dd></div>
-        <div class="fact"><dt>Items under</dt><dd>${desc.length}</dd></div>
-      </dl>
-      ${desc.length ? `<div class="section"><h4><span>Progress of everything under this</span><span>${statusCounts(desc).done}/${desc.length} done</span></h4>${bar(statusCounts(desc))}</div>` : ""}
-      ${n.notes ? `<div class="note">${esc(n.notes)}</div>` : ""}
-      <div class="section"><h4>Deliverables</h4>${list(n.deliverables, "checks")}</div>
-      <div class="section"><h4>Done when</h4>${list(n.acceptance, "checks")}</div>
-      <div class="section"><h4>Depends on</h4>${deps.length ? `<div class="chips">${deps.map(chip).join("")}</div>` : '<p class="empty">Nothing. Can start any time.</p>'}</div>
-      ${blocks.length ? `<div class="section"><h4>Unblocks</h4><div class="chips">${blocks.map(chip).join("")}</div></div>` : ""}
-      <div class="section"><h4>Risks</h4>${n.risks && n.risks.length ? `<ul class="plain risk">${n.risks.map((r) => `<li><span style="color:var(--ink)">${esc(r)}</span></li>`).join("")}</ul>` : '<p class="empty">None flagged.</p>'}</div>
-      ${(n.children || []).length ? `<div class="section"><h4><span>Breaks down into</span><span>${n.children.length}</span></h4><div class="subs">${n.children.map((c) =>
-        `<button type="button" class="sub" data-select="${esc(c.id)}"><span>${esc(c.title)}</span>${priChip(c.priority)}${statusPill(c.status)}</button>`).join("")}</div></div>` : ""}
-    </div>`;
-
-    $("copy-link").addEventListener("click", () => {
-      const url = location.href.split("#")[0] + "#" + n.id;
-      const c = $("copied");
-      const done = () => { c.textContent = "Link copied"; c.hidden = false; setTimeout(() => { c.hidden = true; }, 1600); };
-      const fallback = () => { c.textContent = url; c.hidden = false; c.style.userSelect = "all"; };
-      try {
-        navigator.clipboard.writeText(url).then(done, fallback);
-      } catch (e) { fallback(); }
-    });
-    $("close-sheet").addEventListener("click", () => box.classList.remove("open"));
-  }
-
-  /* ---------- actions ---------- */
-  function select(id, opts) {
-    if (!state.byId.has(id)) return;
-    state.selected = id;
-    ancestors(id).forEach((a) => state.expanded.add(a.id));
-    savePrefs();
-    renderView();
-    renderDetail();
-    if (!opts || !opts.fromHash) {
-      if (location.hash.slice(1) !== id) history.replaceState(null, "", "#" + id);
+      <div class="nav-group">
+        <div class="nav-label">Areas</div>
+        ${areas().map((a) => `<a class="nav-item" href="#${esc(a.id)}"${cur === a.id ? ' aria-current="page"' : ""}>
+            <span class="dot ${rollup(a)}"></span><span>${esc(a.title)}</span><span class="n">${descendants(a).length}</span></a>`).join("")}
+      </div></div>`;
+    const active = $("sidebar").querySelector('[aria-current="page"]');
+    const row = $("sidebar").querySelector(".sidebar-scroll");
+    if (active && row && window.matchMedia("(max-width: 900px)").matches) {
+      row.scrollLeft = active.offsetLeft - row.clientWidth / 2 + active.offsetWidth / 2;
     }
-    if (!opts || !opts.quiet) $("detail").classList.add("open");
-    const row = document.querySelector(`[data-select="${CSS.escape(id)}"]`);
-    if (row && opts && opts.scroll) row.scrollIntoView({ block: "nearest" });
   }
 
+  /* ---------- overview ---------- */
+  function renderOverview() {
+    const m = S.plan.meta, all = [...S.byId.values()].map((e) => e.node).filter((n) => n.id !== S.plan.root.id);
+    const c = counts(all);
+    return `<div class="page">
+      <section>
+        <div class="eyebrow"><b>Product plan</b><span>v${esc(m.version)}</span><span>Updated ${esc(m.updated)}</span></div>
+        <h1>${esc(m.title)}</h1>
+        <p class="lede">${esc(m.subtitle)}</p>
+        <div class="loop" aria-label="Core game loop">${m.loop.map((s, i) => `<span class="loop-step"><span>${esc(s)}</span>${i < m.loop.length - 1 ? '<i aria-hidden="true">→</i>' : ""}</span>`).join("")}<span class="loop-repeat">↺ and repeat</span></div>
+      </section>
+
+      <section class="summary-card" aria-label="Plan summary">
+        <div class="stats">
+          <div class="stat"><b>${all.length}</b><span>items</span></div>
+          <div class="stat"><b>${areas().length}</b><span>areas</span></div>
+          <div class="stat"><b>${m.phases.length}</b><span>phases</span></div>
+          ${(() => { const m2 = /(\d+)\s*weeks?/.exec(S.plan.root.estimate || ""); return m2 ? `<div class="stat"><b>~${m2[1]}</b><span>weeks to soft launch</span></div>` : ""; })()}
+        </div>
+        ${bar(c)}
+        ${legend(c)}
+      </section>
+
+      <section>
+        <div class="section-head"><h2>Areas</h2><p>Pick an area to see everything in it.</p></div>
+        <div class="tiles">${areas().map((a) => {
+          const d = descendants(a);
+          return `<a class="tile" href="#${esc(a.id)}">
+            <h3>${esc(a.title)}</h3>
+            <p>${esc(a.summary)}</p>
+            <div class="tile-foot"><span>${d.length} items · ${phaseRange(a)}</span>${bar(counts(d))}</div>
+          </a>`;
+        }).join("")}</div>
+      </section>
+
+      <section>
+        <div class="section-head"><h2>Build order</h2><p>Each phase builds on the one before it.</p></div>
+        <ol class="steps">${m.phases.map((p) => {
+          const n = all.filter((x) => x.phase === p.id && get(x.id).depth >= 2).length;
+          return `<li class="step"><span class="step-num">${p.id}</span><div><h3>${esc(p.name)}</h3><p>${esc(p.goal)}</p></div><a href="#phase-${p.id}">${n} items →</a></li>`;
+        }).join("")}</ol>
+      </section>
+
+      <p class="foot">The plan lives in <code>data/plan.json</code>. Edit it and push to GitHub, and this site updates itself.</p>
+    </div>`;
+  }
+
+  /* ---------- area page + accordion ---------- */
+  function itemHTML(n, depth) {
+    const open = S.open.has(n.id);
+    const kids = n.children || [];
+    const meta = [
+      n.priority === "P0" ? '<span class="must">Must</span>' : "",
+      n.status !== "planned" ? chip(n.status) : "",
+    ].join("");
+    return `<li class="item${open ? " open" : ""}" id="i-${esc(n.id)}">
+      <button type="button" class="item-row" data-toggle="${esc(n.id)}" aria-expanded="${open}">
+        ${chevron}
+        <span class="item-title">${esc(n.title)}${open ? "" : `<small>${esc(n.summary)}</small>`}</span>
+        <span class="item-meta">${meta}</span>
+      </button>
+      ${open ? bodyHTML(n, depth) : ""}
+    </li>`;
+  }
+  function bodyHTML(n, depth) {
+    const owners = S.plan.meta.owners;
+    const deps = (n.dependsOn || []).filter((d) => S.byId.has(d));
+    const unb = S.unblocks.get(n.id) || [];
+    const link = (id) => { const x = get(id).node; return `<a class="link" href="#${esc(id)}"><span class="dot ${x.status}"></span>${esc(x.title)}</a>`; };
+    const kids = n.children || [];
+    return `<div class="item-body">
+      <p>${esc(n.summary)}</p>
+      <div class="meta-line">
+        <span><b>${PRIORITY[n.priority]}</b></span>
+        <span>${chip(n.status)}</span>
+        <span>Phase ${n.phase} · ${esc(phase(n.phase).name)}</span>
+        <span>${esc(owners[n.owner] || n.owner)}</span>
+        ${n.estimate ? `<span>${esc(n.estimate)}</span>` : ""}
+      </div>
+      ${n.notes ? `<div class="callout"><strong>Note</strong>${esc(n.notes)}</div>` : ""}
+      ${n.deliverables && n.deliverables.length ? `<div class="block"><h4>What gets built</h4><ul class="checks">${n.deliverables.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+      ${n.acceptance && n.acceptance.length ? `<div class="block"><h4>Done when</h4><ul class="checks done-when">${n.acceptance.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+      ${deps.length ? `<div class="block"><h4>Needs first</h4><div class="links">${deps.map(link).join("")}</div></div>` : ""}
+      ${unb.length ? `<div class="block"><h4>Unlocks</h4><div class="links">${unb.map(link).join("")}</div></div>` : ""}
+      ${n.risks && n.risks.length ? `<div class="block"><h4>Risks</h4><ul class="risks">${n.risks.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div>` : ""}
+      ${kids.length ? `<div class="block"><h4>Breaks down into</h4><ul class="items">${kids.map((k) => itemHTML(k, depth + 1)).join("")}</ul></div>` : ""}
+      <div><button type="button" class="text-btn copy" data-copy="${esc(n.id)}">Copy link to this item</button><span class="copied" hidden></span></div>
+    </div>`;
+  }
+  function renderArea(a) {
+    const d = descendants(a), c = counts(d), owners = S.plan.meta.owners;
+    return `<div class="page">
+      <section>
+        <div class="crumbs"><a href="#overview">Overview</a> / ${esc(a.title)}</div>
+        <h1 class="area-title">${esc(a.title)}</h1>
+        <p class="lede">${esc(a.summary)}</p>
+        <dl class="facts">
+          <div><dt>Priority</dt><dd>${PRIORITY[a.priority]}</dd></div>
+          <div><dt>Lead</dt><dd>${esc(owners[a.owner] || a.owner)}</dd></div>
+          <div><dt>When</dt><dd>${phaseRange(a)}</dd></div>
+          ${a.estimate ? `<div><dt>Estimate</dt><dd>${esc(a.estimate)}</dd></div>` : ""}
+          <div><dt>Progress</dt><dd>${c.done} of ${d.length} done</dd></div>
+        </dl>
+      </section>
+      ${(a.acceptance && a.acceptance.length) || (a.risks && a.risks.length) ? `<section class="callout">
+        ${a.acceptance && a.acceptance.length ? `<strong>This area is done when</strong>${a.acceptance.map(esc).join(". ")}.` : ""}
+        ${a.risks && a.risks.length ? `<strong style="margin-top:8px">Watch out for</strong>${a.risks.map(esc).join(". ")}.` : ""}
+      </section>` : ""}
+      <section>
+        <div class="section-head"><h2>${(a.children || []).length} parts</h2>
+          <div class="list-tools"><button type="button" class="text-btn" data-all="open">Open all</button><button type="button" class="text-btn" data-all="close">Close all</button></div>
+        </div>
+        <ul class="items" id="area-items">${(a.children || []).map((k) => itemHTML(k, 2)).join("")}</ul>
+      </section>
+    </div>`;
+  }
+
+  /* ---------- timeline ---------- */
+  function renderTimeline() {
+    const all = [...S.byId.values()].filter((e) => e.depth >= 2).map((e) => e.node);
+    const list = S.tlFilter ? all.filter((n) => n.status === S.tlFilter) : all;
+    const f = (val, label) => `<button type="button" class="filter" data-filter="${val}" aria-pressed="${S.tlFilter === val}">${val ? `<span class="dot ${val}"></span>` : ""}${label}</button>`;
+    return `<div class="page">
+      <section>
+        <div class="crumbs"><a href="#overview">Overview</a> / Build order</div>
+        <h1 class="area-title">Build order</h1>
+        <p class="lede">Every item grouped by the phase it belongs to. Finish a phase before leaning on the next.</p>
+      </section>
+      <div class="filters" role="group" aria-label="Show">${f("", "Everything")}${f("in-progress", "In progress")}${f("blocked", "Blocked")}${f("planned", "Planned")}${f("done", "Done")}</div>
+      ${S.plan.meta.phases.map((p) => {
+        const rows = list.filter((n) => n.phase === p.id).sort((a, b) => a.priority.localeCompare(b.priority));
+        return `<section class="phase-block" id="phase-${p.id}">
+          <div class="phase-head"><span class="step-num">${p.id}</span><div><h2>${esc(p.name)}</h2><p>${esc(p.goal)}</p></div></div>
+          <ul class="rows">${rows.length ? rows.map((n) => `<li><a href="#${esc(n.id)}">
+            <span class="dot ${n.status}"></span>
+            <span class="t">${esc(n.title)}<small>${esc(areaOf(n.id).title)} · ${PRIORITY[n.priority]}</small></span>
+            ${n.status !== "planned" ? chip(n.status) : ""}</a></li>`).join("") : '<li><p class="empty">Nothing here.</p></li>'}</ul>
+        </section>`;
+      }).join("")}
+    </div>`;
+  }
+
+  /* ---------- search ---------- */
+  function renderSearch() {
+    const q = S.q.toLowerCase();
+    const hits = [...S.byId.values()].filter((e) => e.depth >= 1).map((e) => e.node).filter((n) =>
+      [n.title, n.summary, n.notes, ...(n.deliverables || []), ...(n.acceptance || [])].join(" ").toLowerCase().includes(q));
+    return `<div class="page">
+      <section><div class="crumbs">Search</div><h1 class="area-title">“${esc(S.q)}”</h1><p class="lede">${hits.length} ${hits.length === 1 ? "result" : "results"}</p></section>
+      <ul class="rows">${hits.length ? hits.map((n) => {
+        const path = chain(n.id).slice(1).map((x) => x.title).join(" › ") || "Area";
+        return `<li><a href="#${esc(n.id)}" data-clear-search><span class="dot ${n.status}"></span><span class="t">${esc(n.title)}<small>${esc(path)}</small></span>${n.status !== "planned" ? chip(n.status) : ""}</a></li>`;
+      }).join("") : '<li><p class="empty">Nothing matches. Try “truck”, “egg” or “tutorial”.</p></li>'}</ul>
+    </div>`;
+  }
+
+  /* ---------- routing ---------- */
+  function render(opts) {
+    const main = $("main");
+    let html, focus = null;
+    if (S.q) html = renderSearch();
+    else if (S.route === "timeline" || S.route.startsWith("phase-")) html = renderTimeline();
+    else if (get(S.route) && get(S.route).depth >= 1) {
+      const a = areaOf(S.route);
+      if (S.route !== a.id) { chain(S.route).forEach((x) => S.open.add(x.id)); S.open.add(S.route); focus = S.route; savePrefs(); }
+      html = renderArea(a);
+    } else html = renderOverview();
+    main.innerHTML = html;
+    renderSidebar();
+    document.title = (S.q ? "Search · " : "") + (get(S.route) && get(S.route).depth >= 1 ? areaOf(S.route).title + " · " : "") + "Hunt & Haul Roadmap";
+    if (focus) {
+      const el = document.getElementById("i-" + focus);
+      if (el) { el.scrollIntoView({ block: "start" }); el.classList.add("flash"); }
+    } else if (S.route.startsWith("phase-")) {
+      const el = document.getElementById(S.route); if (el) el.scrollIntoView({ block: "start" });
+    } else if (!opts || !opts.keepScroll) window.scrollTo(0, 0);
+  }
+  function go() {
+    const h = decodeURIComponent(location.hash.slice(1));
+    S.route = h && (S.byId.has(h) || h === "timeline" || /^phase-\d+$/.test(h)) ? h : "overview";
+    if (S.route === S.plan.root.id) S.route = "overview";
+    render();
+  }
+
+  /* ---------- events ---------- */
   function bind() {
-    $("view").addEventListener("click", (e) => {
+    $("main").addEventListener("click", (e) => {
       const t = e.target.closest("[data-toggle]");
       if (t) {
         const id = t.dataset.toggle;
-        if (state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id);
-        savePrefs(); renderView();
+        if (S.open.has(id)) S.open.delete(id); else S.open.add(id);
+        savePrefs();
+        const li = document.getElementById("i-" + id);
+        const depth = get(id).depth;
+        if (li) { const tmp = document.createElement("ul"); tmp.innerHTML = itemHTML(get(id).node, depth); li.replaceWith(tmp.firstElementChild); }
         return;
       }
-      const s = e.target.closest("[data-select]");
-      if (s) select(s.dataset.select);
+      const all = e.target.closest("[data-all]");
+      if (all) {
+        const a = areaOf(S.route) || get(S.route).node;
+        const ids = descendants(a).filter((n) => (n.children || []).length || get(n.id).depth === 2).map((n) => n.id);
+        if (all.dataset.all === "open") ids.forEach((id) => S.open.add(id)); else ids.forEach((id) => S.open.delete(id));
+        savePrefs(); render({ keepScroll: true });
+        return;
+      }
+      const f = e.target.closest("[data-filter]");
+      if (f) { S.tlFilter = f.dataset.filter; render({ keepScroll: true }); return; }
+      const c = e.target.closest("[data-copy]");
+      if (c) {
+        const url = location.href.split("#")[0] + "#" + c.dataset.copy;
+        const out = c.nextElementSibling;
+        const ok = () => { out.textContent = "Link copied"; out.hidden = false; setTimeout(() => { out.hidden = true; }, 1600); };
+        const fail = () => { out.textContent = url; out.hidden = false; };
+        try { navigator.clipboard.writeText(url).then(ok, fail); } catch (err) { fail(); }
+        return;
+      }
+      if (e.target.closest("[data-clear-search]")) { S.q = ""; $("q").value = ""; }
     });
-    $("detail").addEventListener("click", (e) => {
-      const s = e.target.closest("[data-select]");
-      if (s) select(s.dataset.select, { scroll: true });
-    });
-    $("phases").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-phase]");
-      if (!b) return;
-      const p = Number(b.dataset.phase);
-      state.filters.phase = state.filters.phase === p ? null : p;
-      renderPhases(); renderView();
-    });
-    $("q").addEventListener("input", (e) => { state.filters.q = e.target.value.trim(); renderView(); });
-    $("f-status").addEventListener("change", (e) => { state.filters.status = e.target.value; renderView(); });
-    $("f-priority").addEventListener("change", (e) => { state.filters.priority = e.target.value; renderView(); });
-    $("f-owner").addEventListener("change", (e) => { state.filters.owner = e.target.value; renderView(); });
-    $("v-tree").addEventListener("click", () => { state.view = "tree"; savePrefs(); renderView(); });
-    $("v-board").addEventListener("click", () => { state.view = "board"; savePrefs(); renderView(); });
-    $("expand-all").addEventListener("click", () => { allNodes().forEach((n) => { if ((n.children || []).length) state.expanded.add(n.id); }); savePrefs(); renderView(); });
-    $("collapse-all").addEventListener("click", () => { state.expanded = new Set([state.plan.root.id]); savePrefs(); renderView(); });
-    window.addEventListener("hashchange", () => {
-      const id = decodeURIComponent(location.hash.slice(1));
-      if (id && id !== state.selected) select(id, { fromHash: true, scroll: true });
-    });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("detail").classList.remove("open"); });
+    $("q").addEventListener("input", (e) => { S.q = e.target.value.trim(); render(); });
+    $("sidebar").addEventListener("click", (e) => { if (e.target.closest("a") && S.q) { S.q = ""; $("q").value = ""; } });
+    window.addEventListener("hashchange", go);
   }
 
   /* ---------- boot ---------- */
-  function boot(plan) {
-    state.plan = plan;
-    index(plan.root, null, 0);
-    const prefs = loadPrefs();
-    if (prefs && Array.isArray(prefs.expanded) && prefs.expanded.length) {
-      state.expanded = new Set(prefs.expanded.filter((id) => state.byId.has(id)));
-    } else {
-      state.expanded = new Set([plan.root.id, "world", "map-creation", "base"]);
-    }
-    if (prefs && (prefs.view === "board" || prefs.view === "tree")) state.view = prefs.view;
-    renderHeader();
-    renderPhases();
-    bind();
-    const fromHash = decodeURIComponent(location.hash.slice(1));
-    select(state.byId.has(fromHash) ? fromHash : "map-creation", { fromHash: true, quiet: true });
-  }
-
   fetch("data/plan.json", { cache: "no-cache" })
     .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-    .then(boot)
+    .then((plan) => {
+      S.plan = plan;
+      index(plan.root, null, 0);
+      const prefs = loadPrefs();
+      if (prefs && Array.isArray(prefs.open)) S.open = new Set(prefs.open.filter((id) => S.byId.has(id)));
+      $("brand").textContent = plan.meta.title;
+      bind();
+      go();
+    })
     .catch((err) => {
-      $("view").innerHTML = `<div class="error">Could not load <code>data/plan.json</code> (${esc(err.message)}).<br>
-        Opening index.html straight from disk blocks this file. Serve the folder instead, for example <code>npx serve .</code>, or use the GitHub Pages link.</div>`;
+      $("main").innerHTML = `<p class="loading">Couldn't load <code>data/plan.json</code> (${esc(err.message)}). If you opened index.html straight from your computer, run <code>npx serve .</code> in the folder instead, or use the GitHub Pages link.</p>`;
     });
 })();
