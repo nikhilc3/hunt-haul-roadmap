@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hunt &amp; Haul Roadmap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Interactive product plan for Hunt & Haul, an open-world Roblox hunting game.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow"><span>Product plan</span><span class="ver" id="ver"></span></div>
+    <h1 id="title">Hunt &amp; Haul</h1>
+    <p class="lede" id="lede"></p>
+    <div class="loop" id="loop" aria-label="Core game loop"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="phases" aria-label="Phases">
+    <div class="phase-row" id="phases"></div>
+  </section>
+
+  <div class="toolbar" role="search">
+    <label class="search" for="q">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search items, e.g. shredder, truck, boss" autocomplete="off">
+    </label>
+    <select id="f-status" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      <option value="planned">Planned</option>
+      <option value="in-progress">In progress</option>
+      <option value="blocked">Blocked</option>
+      <option value="done">Done</option>
+    </select>
+    <select id="f-priority" aria-label="Filter by priority">
+      <option value="">All priorities</option>
+      <option value="P0">P0 must have</option>
+      <option value="P1">P1 should have</option>
+      <option value="P2">P2 nice to have</option>
+    </select>
+    <select id="f-owner" aria-label="Filter by owner"><option value="">All owners</option></select>
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" id="v-tree" aria-pressed="true">Tree</button>
+      <button type="button" id="v-board" aria-pressed="false">By phase</button>
+    </div>
+    <button type="button" class="btn" id="expand-all">Expand all</button>
+    <button type="button" class="btn" id="collapse-all">Collapse</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="workspace">
+    <section class="pane tree-pane" id="tree-pane" aria-label="Plan tree">
+      <div class="legend">
+        <span class="status st-planned">Planned</span>
+        <span class="status st-in-progress">In progress</span>
+        <span class="status st-blocked">Blocked</span>
+        <span class="status st-done">Done</span>
+        <span><span class="pri pri-P0">P0</span> must</span>
+        <span><span class="pri pri-P1">P1</span> should</span>
+        <span><span class="pri pri-P2">P2</span> nice</span>
+      </div>
+      <div id="view"><p class="loading">Loading plan…</p></div>
+    </section>
+
+    <aside class="pane detail" id="detail" aria-label="Item details" aria-live="polite"></aside>
+  </div>
+
+  <footer>
+    Plan data lives in <code>data/plan.json</code>. Edit it, push, and the site redeploys. Updated <span id="updated"></span>.
+  </footer>
+</main>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

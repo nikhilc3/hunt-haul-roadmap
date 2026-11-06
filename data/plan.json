@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "title": "Hunt & Haul",
+    "subtitle": "Open-world hunting game for Roblox: drive out, hunt animals and bosses, haul carcasses and eggs back to your barn, shred for coins, hatch eggs, upgrade, repeat.",
+    "version": "0.1",
+    "updated": "2026-11-06",
+    "loop": ["Drive out", "Hunt", "Haul back", "Shred & hatch", "Upgrade"],
+    "phases": [
+      { "id": 1, "name": "World", "goal": "A walkable, optimized map with the player base laid out." },
+      { "id": 2, "name": "Vehicle", "goal": "The truck drives the whole map and carries cargo." },
+      { "id": 3, "name": "Core loop", "goal": "Shoot one animal, haul it home, shred it for coins. End to end." },
+      { "id": 4, "name": "Progression", "goal": "Eggs, shop, saving. Players have a reason to come back." },
+      { "id": 5, "name": "Content", "goal": "Full animal roster, zones and boss fights." },
+      { "id": 6, "name": "Polish & launch", "goal": "UI, audio, performance, monetization, release." }
+    ],
+    "owners": {
+      "PM": "Product / producer",
+      "ENV": "Environment artist (Blender)",
+      "GPE": "Gameplay engineer",
+      "SYS": "Systems / backend engineer",
+      "UIX": "UI/UX designer",
+      "ANI": "Animator / rigger",
+      "AUD": "Audio",
+      "QA": "QA / playtest"
+    }
+  },
+  "root": {
+    "id": "game",
+    "title": "Hunt & Haul",
+    "summary": "The whole product. Every branch below rolls up into one loop: drive out, hunt, haul back, shred and hatch, upgrade.",
+    "owner": "PM",
+    "priority": "P0",
+    "status": "in-progress",
+    "phase": 1,
+    "estimate": "~12 weeks to soft launch",
+    "deliverables": ["Playable soft-launch build on Roblox", "This roadmap kept current"],
+    "acceptance": ["A new player can complete the full loop in under 10 minutes", "Holds 60 FPS on mid PC, 30 FPS on mid phone"],
+    "risks": ["Scope creep before the core loop is fun", "Map too large for mobile memory"],
+    "children": [
+      {
+        "id": "world",
+        "title": "World & map",
+        "summary": "The open world: terrain, mountains, river, road, forests, props, and the gameplay layout on top of it.",
+        "owner": "ENV",
+        "priority": "P0",
+        "status": "in-progress",
+        "phase": 1,
+        "estimate": "3 weeks",
+        "deliverables": ["Map imported into Place1", "Zones and POIs placed", "Lighting set"],
+        "acceptance": ["Every zone reachable by truck", "No buried or floating assets"],
+        "dependsOn": [],
+        "risks": ["Blender to Roblox import limits (2048-stud mesh cap)"],
+        "children": [
+          {
+            "id": "map-creation",
+            "title": "Map creation (Blender)",
+            "summary": "AlpineValley_Optimized scene: 4096 x 4096 studs, 256 terrain chunks, mountain ring, valley floor, road, trails, river, waterfall gorge.",
+            "owner": "ENV",
+            "priority": "P0",
+            "status": "in-progress",
+            "phase": 1,
+            "estimate": "1 week",
+            "deliverables": ["256 terrain chunks at 512 tris each", "Mountain backdrop and rock ridges", "Valley road with centre markings", "Forest paths and farmyard"],
+            "acceptance": ["Terrain chunks import under 2048 studs each", "Ground texture matches reference clips"],
+            "dependsOn": [],
+            "risks": ["Assets placed under the terrain surface"],
+            "notes": "Scene audit found River_water and all 4 bridges sitting below the ground surface, and the 04_Waterfall camera inside the terrain. Fix before export.",
+            "children": [
+              { "id": "fix-buried", "title": "Fix buried river and bridges", "summary": "Raise or carve: River_water sits at z 1.3 where ground is ~31; Bridge_-90, Bridge_172, Bridge_-390 and StoneBridge top out below ground.", "owner": "ENV", "priority": "P0", "status": "blocked", "phase": 1, "estimate": "1 day", "deliverables": ["River channel carved into terrain", "Bridges seated on banks"], "acceptance": ["Ray check: every water/bridge object above terrain"], "dependsOn": ["map-creation"], "risks": [] },
+              { "id": "veg-pass", "title": "Vegetation pass", "summary": "1,608 oaks, 833 pines, ferns, flowers, dry grass, shrubs. Reduce to instanced variants for Roblox.", "owner": "ENV", "priority": "P1", "status": "in-progress", "phase": 1, "estimate": "2 days", "deliverables": ["6 to 10 tree variants as MeshParts", "Scatter map exported as positions"], "acceptance": ["Trees reuse MeshIds so Roblox instances them"], "dependsOn": ["map-creation"], "risks": ["Trees rooted into steep rock on the mountain apron"] },
+              { "id": "import-pipeline", "title": "Import pipeline", "summary": "Export FBX by category, import with Studio's 3D importer, align to origin, set materials and collision.", "owner": "ENV", "priority": "P0", "status": "planned", "phase": 1, "estimate": "2 days", "deliverables": ["Terrain.fbx, Props.fbx, Trees.fbx", "Alignment script in Studio"], "acceptance": ["Scale is 1:1 (one Blender metre = one stud)", "Collision: terrain precise, decor box or none"], "dependsOn": ["fix-buried"], "risks": ["Importer rescales meshes over 2048 studs"] }
+            ]
+          },
+          {
+            "id": "map-design",
+            "title": "Map design (gameplay layer)",
+            "summary": "Where things go and why: base location, hunting zones by animal, boss arenas, roads, difficulty gradient outward from the barn.",
+            "owner": "PM",
+            "priority": "P0",
+            "status": "planned",
+            "phase": 1,
+            "estimate": "1 week",
+            "deliverables": ["Zone map with spawn regions", "POI list with coordinates"],
+            "acceptance": ["Easy animals within 300 studs of base", "Each boss arena at least 1,000 studs from base"],
+            "dependsOn": ["map-creation"],
+            "risks": [],
+            "children": [
+              { "id": "zones", "title": "Hunting zones", "summary": "Meadow (chickens, rabbits), forest (deer, boar), riverbank (ducks), rocky apron (goats), gorge and ridges (bosses).", "owner": "PM", "priority": "P0", "status": "planned", "phase": 1, "estimate": "2 days", "deliverables": ["Zone volumes in Studio", "Spawn point sets per zone"], "acceptance": ["Zones do not overlap", "Each zone has 8+ spawn points"], "dependsOn": [], "risks": [] },
+              { "id": "boss-arenas", "title": "Boss arenas", "summary": "3 to 5 set-piece spots: waterfall gorge, clock tower, ridge clearing, deep forest.", "owner": "PM", "priority": "P1", "status": "planned", "phase": 5, "estimate": "3 days", "deliverables": ["Arena bounds and entry triggers"], "acceptance": ["Arena fits a truck and 4 players"], "dependsOn": ["zones"], "risks": [] },
+              { "id": "roads", "title": "Roads, trails and ramps", "summary": "Road loop plus dirt trails so every zone is drivable; jumps and ramps for fun.", "owner": "ENV", "priority": "P1", "status": "in-progress", "phase": 1, "estimate": "2 days", "deliverables": ["Drivable road and trails", "3+ ramps"], "acceptance": ["Truck reaches every zone without getting stuck"], "dependsOn": [], "risks": [] },
+              { "id": "pois", "title": "Points of interest", "summary": "Hunting stands, ammo caches, dynamite crates, lookout points.", "owner": "PM", "priority": "P2", "status": "planned", "phase": 5, "estimate": "2 days", "deliverables": ["POI prefabs placed"], "acceptance": [], "dependsOn": ["zones"], "risks": [] }
+            ]
+          },
+          { "id": "lighting", "title": "Lighting & atmosphere", "summary": "Bright cartoon sky with cumulus clouds, warm sun, light atmosphere; optional day/night cycle.", "owner": "ENV", "priority": "P1", "status": "planned", "phase": 1, "estimate": "1 day", "deliverables": ["Lighting preset", "Sky"], "acceptance": ["Matches reference clips side by side"], "dependsOn": [], "risks": [] },
+          { "id": "map-perf", "title": "Map optimization", "summary": "StreamingEnabled, instanced MeshParts, collision fidelity rules, part-count budget.", "owner": "ENV", "priority": "P0", "status": "planned", "phase": 1, "estimate": "2 days", "deliverables": ["Streaming radius tuned", "Budget sheet: tris and parts per zone"], "acceptance": ["Under 1.5 GB client memory on mobile"], "dependsOn": ["import-pipeline"], "risks": [] }
+        ]
+      },
+      {
+        "id": "base",
+        "title": "Player base (barn & hut)",
+        "summary": "Home: the barn and hut, the square hatching pen, the shredder, truck parking and spawn.",
+        "owner": "GPE",
+        "priority": "P0",
+        "status": "planned",
+        "phase": 1,
+        "estimate": "1.5 weeks",
+        "deliverables": ["Base prefab", "Plot ownership per player"],
+        "acceptance": ["Player spawns at their own base"],
+        "dependsOn": ["map-design"],
+        "risks": ["Per-player plots on a shared map need clear separation"],
+        "children": [
+          { "id": "barn", "title": "Barn & hut", "summary": "Red gambrel barn already modelled. Interior storage and spawn point.", "owner": "ENV", "priority": "P0", "status": "in-progress", "phase": 1, "estimate": "2 days", "deliverables": ["Barn interior", "Spawn"], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "hatch-pen", "title": "Hatching pen (square area)", "summary": "Fenced square next to the barn with egg slots and incubation timers.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 4, "estimate": "3 days", "deliverables": ["Egg slot pads", "Timer UI above each egg", "Hatch animation"], "acceptance": ["Egg placed, timer runs while offline, hatches on return"], "dependsOn": ["eggs"], "risks": [] },
+          { "id": "shredder", "title": "Shredder", "summary": "Drop carcasses in, coins come out. Upgradable speed and payout.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 3, "estimate": "3 days", "deliverables": ["Shredder model and drop zone", "Payout calculation", "Feed animation and VFX"], "acceptance": ["Payout matches animal value table", "Server-side only"], "dependsOn": ["economy"], "risks": [] },
+          { "id": "unload", "title": "Truck unloading zone", "summary": "Back the truck into the zone and cargo auto-transfers: carcasses to the shredder queue, eggs to the pen.", "owner": "GPE", "priority": "P1", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": ["Unload trigger", "Transfer animation"], "acceptance": [], "dependsOn": ["truck-cargo", "shredder"], "risks": [] },
+          { "id": "plots", "title": "Per-player plots", "summary": "Each server slot gets its own base; 'My Plot' button teleports home.", "owner": "SYS", "priority": "P1", "status": "planned", "phase": 4, "estimate": "3 days", "deliverables": ["Plot assignment", "My Plot teleport"], "acceptance": ["Up to 8 plots per server, no overlap"], "dependsOn": [], "risks": [] }
+        ]
+      },
+      {
+        "id": "player",
+        "title": "Player & character",
+        "summary": "The duck avatar, camera modes, inventory, and carrying things.",
+        "owner": "GPE",
+        "priority": "P0",
+        "status": "planned",
+        "phase": 2,
+        "estimate": "1 week",
+        "deliverables": [],
+        "acceptance": [],
+        "dependsOn": [],
+        "risks": [],
+        "children": [
+          { "id": "avatar", "title": "Duck avatar & animations", "summary": "Idle, walk, run, aim, reload, throw, carry.", "owner": "ANI", "priority": "P1", "status": "planned", "phase": 2, "estimate": "4 days", "deliverables": ["Rig", "8 core animations"], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "camera", "title": "Camera modes", "summary": "First person for shooting, third person on foot and in the truck.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 2, "estimate": "2 days", "deliverables": ["Camera controller"], "acceptance": ["Switches cleanly when entering/leaving truck"], "dependsOn": [], "risks": [] },
+          { "id": "inventory", "title": "Inventory & hotbar", "summary": "Weapons, dynamite, carried item slot.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": ["Hotbar UI", "Inventory data model"], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "carry", "title": "Carrying system", "summary": "Pick up a carcass or egg, carry it (slower walk), load it onto the truck bed.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": ["Pickup prompt", "Carry pose", "Drop/load"], "acceptance": ["Only one heavy item carried at a time"], "dependsOn": ["truck-cargo"], "risks": [] }
+        ]
+      },
+      {
+        "id": "vehicle",
+        "title": "Vehicle: the truck",
+        "summary": "Reuse the existing driving scripts. The truck is how you reach zones and how you bring loot home.",
+        "owner": "GPE",
+        "priority": "P0",
+        "status": "planned",
+        "phase": 2,
+        "estimate": "2 weeks",
+        "deliverables": ["Drivable truck on the full map"],
+        "acceptance": ["Drives every road and trail", "Carries up to 6 items"],
+        "dependsOn": ["world"],
+        "risks": ["Existing driving code may assume flat ground"],
+        "children": [
+          { "id": "truck-physics", "title": "Chassis & physics", "summary": "Port the existing driving files: suspension, wheel friction, acceleration, braking, steering.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 2, "estimate": "4 days", "deliverables": ["Truck model rigged with constraints", "Tuned handling values"], "acceptance": ["Climbs map slopes", "No flipping on normal turns"], "dependsOn": [], "risks": [] },
+          { "id": "truck-seats", "title": "Seats & enter/exit", "summary": "Driver plus passengers for co-op.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 2, "estimate": "1 day", "deliverables": ["Seat prompts"], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "truck-cargo", "title": "Cargo bed", "summary": "Slots for carcasses and eggs, visual stacking, weight slows the truck.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 3, "estimate": "3 days", "deliverables": ["Cargo slot system", "Weld/attach on load"], "acceptance": ["Cargo stays on during jumps"], "dependsOn": ["truck-physics"], "risks": [] },
+          { "id": "truck-hud", "title": "Dashboard & radar", "summary": "Radar/compass like the reference clip, speed, cargo count.", "owner": "UIX", "priority": "P1", "status": "planned", "phase": 2, "estimate": "2 days", "deliverables": ["Dashboard UI"], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "truck-recover", "title": "Flip recovery & respawn", "summary": "Auto-right button; respawn truck at base.", "owner": "GPE", "priority": "P1", "status": "planned", "phase": 2, "estimate": "1 day", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "truck-upgrades", "title": "Truck upgrades", "summary": "Engine, tyres, bigger bed.", "owner": "GPE", "priority": "P2", "status": "planned", "phase": 4, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": ["shop"], "risks": [] }
+        ]
+      },
+      {
+        "id": "combat",
+        "title": "Weapons & combat",
+        "summary": "Data-driven guns, dynamite, and the feel of hitting things.",
+        "owner": "GPE",
+        "priority": "P0",
+        "status": "planned",
+        "phase": 3,
+        "estimate": "2 weeks",
+        "deliverables": [],
+        "acceptance": ["Shooting feels responsive at 150 ms ping"],
+        "dependsOn": [],
+        "risks": ["Exploiters faking hits"],
+        "children": [
+          { "id": "gun-framework", "title": "Gun framework", "summary": "One module, every gun is a config: damage, fire rate, spread, recoil, mag size, reload time, range falloff.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 3, "estimate": "4 days", "deliverables": ["GunConfig table", "Pistol, shotgun, rifle to start"], "acceptance": ["New gun added with config only"], "dependsOn": [], "risks": [] },
+          { "id": "aiming", "title": "Aiming & scopes", "summary": "Hip fire, aim down sights, scope overlay for the rifle.", "owner": "GPE", "priority": "P1", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": ["gun-framework"], "risks": [] },
+          { "id": "hit-detect", "title": "Hit detection", "summary": "Client raycasts for responsiveness; server re-validates distance, line of sight and fire rate.", "owner": "SYS", "priority": "P0", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": ["Shoot RemoteEvent with validation"], "acceptance": ["Rejected: hits through walls, faster than fire rate"], "dependsOn": ["gun-framework"], "risks": [] },
+          { "id": "dynamite", "title": "Dynamite", "summary": "Throw arc, fuse, explosion radius damage and knockback.", "owner": "GPE", "priority": "P1", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": [], "acceptance": ["Does not damage the map"], "dependsOn": [], "risks": [] },
+          { "id": "combat-feel", "title": "Combat feel", "summary": "Muzzle flash, tracers, hit markers, impact particles, screen shake, sounds.", "owner": "GPE", "priority": "P1", "status": "planned", "phase": 3, "estimate": "3 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "melee", "title": "Melee (bat)", "summary": "Fallback weapon from the reference clip.", "owner": "GPE", "priority": "P2", "status": "planned", "phase": 3, "estimate": "1 day", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] }
+        ]
+      },
+      {
+        "id": "animals",
+        "title": "Animals & AI",
+        "summary": "What you hunt: roster, spawning, behaviour, death and drops, and boss fights.",
+        "owner": "GPE",
+        "priority": "P0",
+        "status": "planned",
+        "phase": 3,
+        "estimate": "3 weeks",
+        "deliverables": [],
+        "acceptance": [],
+        "dependsOn": ["zones"],
+        "risks": ["Too many active NPCs hurts server performance"],
+        "children": [
+          { "id": "roster", "title": "Animal roster", "summary": "Tiers common to legendary. Each: HP, speed, damage, coin value, egg type, zone.", "owner": "PM", "priority": "P0", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": ["Roster table (start: chicken, rabbit, deer, boar)"], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "spawner", "title": "Spawner", "summary": "Per-zone caps, respawn timers, rarity rolls; despawn far from players.", "owner": "SYS", "priority": "P0", "status": "planned", "phase": 3, "estimate": "3 days", "deliverables": [], "acceptance": ["Server under 60 active animals"], "dependsOn": ["roster"], "risks": [] },
+          { "id": "behaviour", "title": "Behaviour", "summary": "Wander, graze, flee on gunfire, aggressive types charge.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 3, "estimate": "4 days", "deliverables": ["State machine module"], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "death-drops", "title": "Death, carcass & egg drop", "summary": "On kill: ragdoll into a carryable carcass, roll an egg drop.", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": [], "acceptance": ["Carcass persists 3 minutes"], "dependsOn": ["behaviour"], "risks": [] },
+          { "id": "hitzones", "title": "Hit zones", "summary": "Headshot multiplier.", "owner": "GPE", "priority": "P2", "status": "planned", "phase": 3, "estimate": "1 day", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "bosses", "title": "Boss fights", "summary": "Unique models, phased attacks, arena trigger, health bar, big loot and rare egg, server-wide cooldown.", "owner": "GPE", "priority": "P1", "status": "planned", "phase": 5, "estimate": "2 weeks", "deliverables": ["First boss end to end", "Boss framework for the rest"], "acceptance": ["4 players can beat boss 1 in 3 to 5 minutes"], "dependsOn": ["boss-arenas", "behaviour"], "risks": [] }
+        ]
+      },
+      {
+        "id": "economy",
+        "title": "Loot & economy",
+        "summary": "Coins in, upgrades out. Values that make the loop feel good.",
+        "owner": "PM",
+        "priority": "P0",
+        "status": "planned",
+        "phase": 4,
+        "estimate": "2 weeks",
+        "deliverables": ["Economy spreadsheet"],
+        "acceptance": ["First upgrade within 5 minutes of play"],
+        "dependsOn": [],
+        "risks": ["Inflation if bosses pay too much"],
+        "children": [
+          { "id": "shred-value", "title": "Shred value", "summary": "Coins per carcass by animal, rarity and weight.", "owner": "PM", "priority": "P0", "status": "planned", "phase": 3, "estimate": "1 day", "deliverables": [], "acceptance": [], "dependsOn": ["roster"], "risks": [] },
+          { "id": "eggs", "title": "Eggs & pets", "summary": "Eggs hatch into pets that give buffs (speed, damage, auto-collect).", "owner": "GPE", "priority": "P0", "status": "planned", "phase": 4, "estimate": "4 days", "deliverables": ["Egg table", "Pet follow + buff system"], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "shop", "title": "Shop", "summary": "Guns, ammo, dynamite, truck and barn upgrades.", "owner": "UIX", "priority": "P0", "status": "planned", "phase": 4, "estimate": "3 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "progression", "title": "Levels & rebirth", "summary": "XP from kills unlocks zones and guns; rebirth for long-term players.", "owner": "PM", "priority": "P1", "status": "planned", "phase": 4, "estimate": "3 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "index", "title": "Index (collection book)", "summary": "Every animal and egg discovered.", "owner": "UIX", "priority": "P2", "status": "planned", "phase": 4, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] }
+        ]
+      },
+      {
+        "id": "ui",
+        "title": "UI / UX",
+        "summary": "HUD, menus and mobile controls.",
+        "owner": "UIX",
+        "priority": "P1",
+        "status": "planned",
+        "phase": 6,
+        "estimate": "2 weeks",
+        "deliverables": [],
+        "acceptance": ["Everything usable on a phone"],
+        "dependsOn": [],
+        "risks": [],
+        "children": [
+          { "id": "hud", "title": "HUD", "summary": "Ammo, health, coins, cargo count, compass.", "owner": "UIX", "priority": "P0", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "menus", "title": "Menus", "summary": "Shop, index, inventory, settings, rebirth.", "owner": "UIX", "priority": "P1", "status": "planned", "phase": 4, "estimate": "4 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "mobile", "title": "Mobile controls", "summary": "Fire, aim, throw, drive buttons.", "owner": "UIX", "priority": "P0", "status": "planned", "phase": 6, "estimate": "3 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "notifications", "title": "Notifications", "summary": "Boss spawned, shop restocked, egg hatched.", "owner": "UIX", "priority": "P2", "status": "planned", "phase": 5, "estimate": "1 day", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] }
+        ]
+      },
+      {
+        "id": "backend",
+        "title": "Multiplayer & data",
+        "summary": "Server authority, saving, co-op, anti-exploit.",
+        "owner": "SYS",
+        "priority": "P0",
+        "status": "planned",
+        "phase": 4,
+        "estimate": "1.5 weeks",
+        "deliverables": [],
+        "acceptance": ["No data loss across 1,000 test sessions"],
+        "dependsOn": [],
+        "risks": ["DataStore throttling"],
+        "children": [
+          { "id": "remotes", "title": "Client/server remotes", "summary": "RemoteEvents for shooting, damage, loot, purchases. Server decides.", "owner": "SYS", "priority": "P0", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "datastore", "title": "Saving (DataStore)", "summary": "Coins, inventory, pets, eggs and timers, upgrades, index, rebirths. Autosave and session lock.", "owner": "SYS", "priority": "P0", "status": "planned", "phase": 4, "estimate": "3 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "coop", "title": "Co-op & friend boost", "summary": "Shared truck, shared boss loot, friend boost multiplier.", "owner": "SYS", "priority": "P2", "status": "planned", "phase": 5, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "anticheat", "title": "Anti-exploit", "summary": "Server-side damage, speed and teleport checks, purchase validation.", "owner": "SYS", "priority": "P1", "status": "planned", "phase": 6, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": ["hit-detect"], "risks": [] }
+        ]
+      },
+      {
+        "id": "audio",
+        "title": "Audio & polish",
+        "summary": "Ambience, weapons, animals, music, particles.",
+        "owner": "AUD",
+        "priority": "P2",
+        "status": "planned",
+        "phase": 6,
+        "estimate": "1 week",
+        "deliverables": [],
+        "acceptance": [],
+        "dependsOn": [],
+        "risks": [],
+        "children": [
+          { "id": "ambience", "title": "Ambience", "summary": "Birds, wind, river by zone.", "owner": "AUD", "priority": "P2", "status": "planned", "phase": 6, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "sfx", "title": "Weapon & animal SFX", "summary": "Per gun, explosion, animal calls and hit reactions.", "owner": "AUD", "priority": "P1", "status": "planned", "phase": 3, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "music", "title": "Music", "summary": "Exploration loop and boss theme.", "owner": "AUD", "priority": "P2", "status": "planned", "phase": 6, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] }
+        ]
+      },
+      {
+        "id": "monetization",
+        "title": "Monetization",
+        "summary": "Gamepasses and dev products that don't break the economy.",
+        "owner": "PM",
+        "priority": "P2",
+        "status": "planned",
+        "phase": 6,
+        "estimate": "1 week",
+        "deliverables": [],
+        "acceptance": [],
+        "dependsOn": ["economy"],
+        "risks": ["Pay-to-win perception"],
+        "children": [
+          { "id": "passes", "title": "Gamepasses", "summary": "2x coins, VIP truck, extra hatch slot.", "owner": "PM", "priority": "P2", "status": "planned", "phase": 6, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "products", "title": "Dev products", "summary": "Coin packs, dynamite packs, lucky eggs.", "owner": "PM", "priority": "P2", "status": "planned", "phase": 6, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] }
+        ]
+      },
+      {
+        "id": "launch",
+        "title": "Testing & launch",
+        "summary": "Performance targets, playtests, analytics, soft launch.",
+        "owner": "QA",
+        "priority": "P1",
+        "status": "planned",
+        "phase": 6,
+        "estimate": "1.5 weeks",
+        "deliverables": [],
+        "acceptance": [],
+        "dependsOn": [],
+        "risks": [],
+        "children": [
+          { "id": "perf", "title": "Performance pass", "summary": "60 FPS mid PC, 30 FPS mid phone; memory budget.", "owner": "QA", "priority": "P0", "status": "planned", "phase": 6, "estimate": "3 days", "deliverables": ["Profiling report"], "acceptance": [], "dependsOn": ["map-perf"], "risks": [] },
+          { "id": "playtest", "title": "Playtests", "summary": "Weekly internal sessions from Phase 3 on; track time-to-first-upgrade.", "owner": "QA", "priority": "P1", "status": "planned", "phase": 3, "estimate": "ongoing", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "analytics", "title": "Analytics", "summary": "Session length, loop completion, retention D1/D7.", "owner": "SYS", "priority": "P2", "status": "planned", "phase": 6, "estimate": "2 days", "deliverables": [], "acceptance": [], "dependsOn": [], "risks": [] },
+          { "id": "soft-launch", "title": "Soft launch", "summary": "Public release with a small marketing push; iterate on data.", "owner": "PM", "priority": "P1", "status": "planned", "phase": 6, "estimate": "1 week", "deliverables": [], "acceptance": [], "dependsOn": ["perf"], "risks": [] }
+        ]
+      }
+    ]
+  }
+}
