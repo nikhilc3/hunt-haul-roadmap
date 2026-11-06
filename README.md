@@ -30,14 +30,17 @@ validation job and does not deploy.
 
 ## Images and video
 
-Every item and area has an **Images and video** section. On the GitHub Pages site:
+Every item and area has a **Show videos & references** button that opens its gallery and upload box,
+and a **Download all (.zip)** button once it has files. Area pages can zip everything in the area,
+with one folder per item. To add files on the GitHub Pages site:
 
 1. Click **Add media** in the top bar.
 2. Create a fine-grained token at <https://github.com/settings/personal-access-tokens/new>:
    - Repository access: **Only select repositories** → this repo
    - Repository permissions: **Contents → Read and write**
 3. Paste it into the dialog. It is kept in that browser only and sent only to GitHub.
-4. Drag images or videos onto any item (or click **choose files**).
+4. Open an item, click **Show videos & references**, and drag images or videos onto the box
+   (or click **choose files**).
 
 Each upload is committed to `media/<item-id>/`, and listed in `data/media.json`. The site
 redeploys automatically, so everyone sees the new media about a minute later. Limits:

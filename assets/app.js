@@ -25,6 +25,7 @@
     localUrls: new Map(),      // repo path -> object URL for files uploaded in this session
     uploads: new Map(),        // item id -> [{ name, state, msg }]
     confirmRm: null,           // path awaiting a second click to remove
+    mediaOpen: new Set(),      // items whose "videos & references" panel is open
   };
 
   const GH_KEY = "hh-roadmap-github";
@@ -381,6 +382,19 @@
   function mediaBlock(n, isArea) {
     const list = mediaFor(n.id);
     const ups = S.uploads.get(n.id) || [];
+    const open = S.mediaOpen.has(n.id) || ups.length > 0;
+    const scope = isArea ? [n, ...descendants(n)] : [n];
+    const total = scope.reduce((sum, x) => sum + mediaFor(x.id).length, 0);
+    const toggle = `<button type="button" class="media-toggle" data-media-toggle="${esc(n.id)}" aria-expanded="${open}">
+        ${camIcon}<span>${open ? "Hide" : "Show"} videos &amp; references</span><span class="media-n">${list.length}</span></button>`;
+    const zip = total && onGitHubSite()
+      ? `<button type="button" class="media-toggle zip" data-zip="${esc(n.id)}" data-scope="${isArea ? "area" : "item"}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 17v3h16v-3"/></svg>
+          <span>${isArea ? `Download all ${total} from this area` : "Download all"} (.zip)</span></button>`
+      : "";
+    if (!open) {
+      return `<div class="block media" data-media="${esc(n.id)}"><div class="media-bar">${toggle}${zip}</div></div>`;
+    }
     const shots = list.map((m) => {
       const src = srcFor(m.path), fallback = rawUrl(m.path);
       const view = m.type === "video"
@@ -397,16 +411,71 @@
         <small>Images up to ${LIMITS.image} MB, videos up to ${LIMITS.video} MB</small>
       </div>`;
     } else if (onGitHubSite()) {
-      add = `<p class="media-note">${list.length ? "" : "No images or videos yet. "}<button type="button" data-connect>Connect GitHub</button> to add some.</p>`;
+      add = `<p class="media-note"><button type="button" data-connect>Connect GitHub</button> to add videos and images here.</p>`;
     } else {
-      add = list.length ? "" : '<p class="media-note">No images or videos yet. Add them on the GitHub Pages site.</p>';
+      add = '<p class="media-note">Adding files works on the GitHub Pages site.</p>';
     }
     const upl = ups.length ? `<ul class="uploads">${ups.map((u) => `<li class="${u.state}">${esc(u.name)}: ${esc(u.msg)}</li>`).join("")}</ul>` : "";
-    return `<div class="block media" data-media="${esc(n.id)}">
-      <h4>${isArea ? "Reference images and video for this area" : "Images and video"}</h4>
-      <div class="gallery">${shots}</div>
-      ${add}${upl}
+    return `<div class="block media open" data-media="${esc(n.id)}">
+      <div class="media-bar">${toggle}${zip}</div>
+      <div class="media-panel">
+        ${list.length ? `<div class="gallery">${shots}</div>` : `<p class="media-note">No videos or references here yet.</p>`}
+        ${add}${upl}
+      </div>
     </div>`;
+  }
+
+  /* ---------- zip download ---------- */
+  function loadJSZip() {
+    if (window.JSZip) return Promise.resolve(window.JSZip);
+    return new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+      s.onload = () => res(window.JSZip);
+      s.onerror = () => rej(new Error("Couldn't load the zip tool. Check your connection."));
+      document.head.appendChild(s);
+    });
+  }
+  async function fetchMedia(m) {
+    for (const url of [S.localUrls.get(m.path), srcFor(m.path), rawUrl(m.path)].filter(Boolean)) {
+      try { const r = await fetch(url); if (r.ok) return await r.blob(); } catch (e) { /* try the next source */ }
+    }
+    throw new Error(`Couldn't download ${m.name}`);
+  }
+  async function downloadZip(btn) {
+    const e = get(btn.dataset.zip); if (!e) return;
+    const label = btn.querySelector("span");
+    const before = label.textContent;
+    const nodes = btn.dataset.scope === "area" ? [e.node, ...descendants(e.node)] : [e.node];
+    const files = [];
+    nodes.forEach((x, i) => mediaFor(x.id).forEach((m) => files.push({ m, folder: nodes.length > 1 ? `${String(i + 1).padStart(2, "0")}-${safeName(x.title)}` : "" })));
+    btn.disabled = true;
+    try {
+      label.textContent = "Getting the zip tool…";
+      const JSZip = await loadJSZip();
+      const zip = new JSZip();
+      const used = new Set();
+      for (let i = 0; i < files.length; i++) {
+        label.textContent = `Adding ${i + 1} of ${files.length}…`;
+        const { m, folder } = files[i];
+        let name = (folder ? folder + "/" : "") + m.name;
+        let k = 2; while (used.has(name)) name = (folder ? folder + "/" : "") + `${k++}-${m.name}`;
+        used.add(name);
+        zip.file(name, await fetchMedia(m));
+      }
+      label.textContent = "Packing…";
+      const blob = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${safeName(e.node.title)}-references.zip`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      label.textContent = "Downloaded";
+      setTimeout(() => { label.textContent = before; btn.disabled = false; }, 1800);
+    } catch (err) {
+      label.textContent = err.message;
+      setTimeout(() => { label.textContent = before; btn.disabled = false; }, 3500);
+    }
   }
 
   // Re-render only the media block (and the row's count) for one item, keeping scroll position.
@@ -499,6 +568,15 @@
     const z = e.target.closest("[data-zoom]");
     if (z) { const img = z.previousElementSibling; $("lightbox-img").src = img.currentSrc || img.src; $("lightbox-img").alt = img.alt; $("lightbox").showModal(); return true; }
     if (e.target.closest("[data-connect]")) { openConnect(); return true; }
+    const mt = e.target.closest("[data-media-toggle]");
+    if (mt) {
+      const id = mt.dataset.mediaToggle;
+      if (S.mediaOpen.has(id) || S.uploads.has(id)) { S.mediaOpen.delete(id); S.uploads.delete(id); } else S.mediaOpen.add(id);
+      refreshMedia(id);
+      return true;
+    }
+    const zb = e.target.closest("[data-zip]");
+    if (zb) { if (!zb.disabled) downloadZip(zb); return true; }
     const rm = e.target.closest("[data-rm]");
     if (rm) {
       if (S.confirmRm === rm.dataset.rm) { rm.textContent = "Removing…"; removeMedia(rm.dataset.item, rm.dataset.rm); }

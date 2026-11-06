@@ -228,8 +228,18 @@ h2 { margin: 0; font: 700 26px/1.1 var(--f-display); text-transform: uppercase; 
 .gh-btn:hover { border-color: var(--line-2); }
 .gh-btn .dot { background: var(--st-done); }
 .media-count { display: inline-flex; align-items: center; gap: 4px; font: 12px var(--f-mono); color: var(--muted); }
-.block.media { display: grid; gap: 10px; }
-.block.media h4 { margin: 0; }
+.block.media { display: grid; gap: 12px; }
+.media-bar { display: flex; flex-wrap: wrap; gap: 8px; }
+.media-toggle {
+  display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line-2); background: var(--surface);
+  border-radius: 999px; padding: 7px 14px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--ink-2);
+}
+.media-toggle:hover { border-color: var(--accent); color: var(--ink); }
+.media-toggle[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.media-toggle[disabled] { cursor: progress; opacity: .8; }
+.media-toggle.zip { font-weight: 500; }
+.media-n { font: 500 12px/1 var(--f-mono); background: var(--sunk); color: var(--muted); border-radius: 999px; padding: 3px 7px; }
+.media-panel { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
 .gallery:empty { display: none; }
 .shot { margin: 0; display: grid; gap: 6px; min-width: 0; }
