@@ -34,6 +34,18 @@ function walk(node, trail) {
 walk(plan.root, []);
 for (const [where, d] of deps) if (!ids.has(d)) errors.push(`${where}: dependsOn "${d}" does not exist`);
 
+// Media list: every entry must point at a real item and a file that exists in the repo.
+const mediaFile = path.join(__dirname, "..", "data", "media.json");
+if (fs.existsSync(mediaFile)) {
+  const media = JSON.parse(fs.readFileSync(mediaFile, "utf8"));
+  for (const [id, list] of Object.entries(media.items || {})) {
+    if (!ids.has(id)) console.warn(`warning: media.json has files for "${id}", which is no longer in the plan`);
+    for (const m of list) {
+      if (!fs.existsSync(path.join(__dirname, "..", m.path))) errors.push(`media.json: ${m.path} is listed but the file is missing`);
+    }
+  }
+}
+
 if (errors.length) {
   console.error(`plan.json has ${errors.length} problem(s):\n- ` + errors.join("\n- "));
   process.exit(1);

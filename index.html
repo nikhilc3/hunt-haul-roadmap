@@ -22,8 +22,36 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="Search the plan" autocomplete="off">
     </label>
+    <button type="button" class="gh-btn" id="gh-btn" hidden></button>
   </div>
 </header>
+
+<dialog class="modal" id="gh-dialog" aria-labelledby="gh-title">
+  <form method="dialog" class="modal-body" id="gh-form">
+    <h2 id="gh-title">Connect GitHub to add media</h2>
+    <p>Images and videos are saved into the <b id="gh-repo"></b> repo, so everyone who opens the site sees them. Connect once per browser with a token that can only change this repo.</p>
+    <ol class="how">
+      <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub’s new token page</a>.</li>
+      <li>Under <b>Repository access</b>, pick <b>Only select repositories</b> and choose <b id="gh-repo-2"></b>.</li>
+      <li>Under <b>Permissions → Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
+      <li>Click <b>Generate token</b>, copy it, and paste it below.</li>
+    </ol>
+    <label class="field" for="gh-token">Token
+      <input id="gh-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+    </label>
+    <p class="fine">The token stays in this browser only and is sent only to GitHub. The repo is public, so uploaded files are public too.</p>
+    <p class="form-error" id="gh-error" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost" id="gh-cancel">Cancel</button>
+      <button type="submit" class="btn-primary" id="gh-submit">Connect</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="lightbox" id="lightbox" aria-label="Image preview">
+  <button type="button" class="lightbox-close" id="lightbox-close" aria-label="Close">×</button>
+  <img id="lightbox-img" alt="">
+</dialog>
 
 <div class="shell">
   <nav class="sidebar" id="sidebar" aria-label="Sections"></nav>

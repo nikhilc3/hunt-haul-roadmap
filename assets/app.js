@@ -20,7 +20,15 @@
     route: "overview",
     tlFilter: "",
     q: "",
+    media: { items: {} },      // contents of data/media.json
+    gh: null,                  // { token, login } when connected
+    localUrls: new Map(),      // repo path -> object URL for files uploaded in this session
+    uploads: new Map(),        // item id -> [{ name, state, msg }]
+    confirmRm: null,           // path awaiting a second click to remove
   };
+
+  const GH_KEY = "hh-roadmap-github";
+  const LIMITS = { image: 10, video: 50 }; // MB
 
   /* ---------- per-viewer memory (optional) ---------- */
   function loadPrefs() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) { return null; } }
@@ -135,7 +143,9 @@
   function itemHTML(n, depth) {
     const open = S.open.has(n.id);
     const kids = n.children || [];
+    const mc = mediaFor(n.id).length;
     const meta = [
+      mc ? `<span class="media-count" title="${mc} image${mc === 1 ? "" : "s"} or video${mc === 1 ? "" : "s"}">${camIcon}${mc}</span>` : "",
       n.priority === "P0" ? '<span class="must">Must</span>' : "",
       n.status !== "planned" ? chip(n.status) : "",
     ].join("");
@@ -164,6 +174,7 @@
         ${n.estimate ? `<span>${esc(n.estimate)}</span>` : ""}
       </div>
       ${n.notes ? `<div class="callout"><strong>Note</strong>${esc(n.notes)}</div>` : ""}
+      ${mediaBlock(n)}
       ${n.deliverables && n.deliverables.length ? `<div class="block"><h4>What gets built</h4><ul class="checks">${n.deliverables.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
       ${n.acceptance && n.acceptance.length ? `<div class="block"><h4>Done when</h4><ul class="checks done-when">${n.acceptance.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
       ${deps.length ? `<div class="block"><h4>Needs first</h4><div class="links">${deps.map(link).join("")}</div></div>` : ""}
@@ -192,6 +203,7 @@
         ${a.acceptance && a.acceptance.length ? `<strong>This area is done when</strong>${a.acceptance.map(esc).join(". ")}.` : ""}
         ${a.risks && a.risks.length ? `<strong style="margin-top:8px">Watch out for</strong>${a.risks.map(esc).join(". ")}.` : ""}
       </section>` : ""}
+      <section id="area-media">${mediaBlock(a, true)}</section>
       <section>
         <div class="section-head"><h2>${(a.children || []).length} parts</h2>
           <div class="list-tools"><button type="button" class="text-btn" data-all="open">Open all</button><button type="button" class="text-btn" data-all="close">Close all</button></div>
@@ -240,6 +252,262 @@
     </div>`;
   }
 
+  /* ---------- media: images and videos per item, stored in the GitHub repo ---------- */
+  const camIcon = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>';
+  const repo = () => S.plan.meta.repo || "";
+  const branch = () => S.plan.meta.branch || "main";
+  const onGitHubSite = () => /\.github\.io$/.test(location.hostname) || ["localhost", "127.0.0.1"].includes(location.hostname);
+  const canUpload = () => onGitHubSite() && !!(S.gh && S.gh.token) && !!repo();
+  const mediaFor = (id) => (S.media.items && S.media.items[id]) || [];
+  const rawUrl = (path) => `https://raw.githubusercontent.com/${repo()}/${branch()}/${path.split("/").map(encodeURIComponent).join("/")}`;
+  const srcFor = (path) => S.localUrls.get(path) || path.split("/").map(encodeURIComponent).join("/");
+
+  function loadGh() { try { S.gh = JSON.parse(localStorage.getItem(GH_KEY) || "null"); } catch (e) { S.gh = null; } }
+  function saveGh() { try { if (S.gh) localStorage.setItem(GH_KEY, JSON.stringify(S.gh)); else localStorage.removeItem(GH_KEY); } catch (e) { /* ignore */ } }
+
+  function gh(path, opts) {
+    const o = opts || {};
+    return fetch("https://api.github.com" + path, {
+      method: o.method || "GET",
+      headers: Object.assign({ Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+        (o.token || (S.gh && S.gh.token)) ? { Authorization: "Bearer " + (o.token || S.gh.token) } : {}),
+      body: o.body ? JSON.stringify(o.body) : undefined,
+    });
+  }
+  const b64encodeText = (str) => btoa(unescape(encodeURIComponent(str)));
+  const b64decodeText = (b64) => decodeURIComponent(escape(atob(b64.replace(/\s/g, ""))));
+  function fileToBase64(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(String(r.result).split(",")[1] || "");
+      r.onerror = () => rej(new Error("Couldn't read the file"));
+      r.readAsDataURL(file);
+    });
+  }
+
+  async function loadMedia() {
+    if (canUpload()) {
+      try {
+        const r = await gh(`/repos/${repo()}/contents/data/media.json?ref=${branch()}`);
+        if (r.ok) { const j = await r.json(); S.media = JSON.parse(b64decodeText(j.content)); return; }
+      } catch (e) { /* fall back to the deployed copy */ }
+    }
+    try {
+      const r = await fetch("data/media.json", { cache: "no-cache" });
+      if (r.ok) S.media = await r.json();
+    } catch (e) { /* no media yet */ }
+    if (!S.media || typeof S.media.items !== "object") S.media = { items: {} };
+  }
+
+  // Read-modify-write data/media.json with the file's sha; retry if someone else saved first.
+  async function updateManifest(mutate, message) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      let sha, data = { items: {} };
+      const r = await gh(`/repos/${repo()}/contents/data/media.json?ref=${branch()}`);
+      if (r.ok) { const j = await r.json(); sha = j.sha; data = JSON.parse(b64decodeText(j.content)); }
+      else if (r.status !== 404) throw new Error(`GitHub said ${r.status} while reading the media list`);
+      if (!data.items) data.items = {};
+      mutate(data);
+      const w = await gh(`/repos/${repo()}/contents/data/media.json`, { method: "PUT", body: {
+        message, branch: branch(), sha, content: b64encodeText(JSON.stringify(data, null, 2) + "\n") } });
+      if (w.ok) { S.media = data; return; }
+      if (w.status !== 409 && w.status !== 422) throw new Error(`GitHub said ${w.status} while saving the media list`);
+    }
+    throw new Error("Someone else was saving at the same moment. Try again.");
+  }
+
+  function safeName(name) {
+    const dot = name.lastIndexOf(".");
+    const base = (dot > 0 ? name.slice(0, dot) : name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "file";
+    const ext = dot > 0 ? name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+    return ext ? `${base}.${ext}` : base;
+  }
+
+  function setUpload(id, name, state, msg) {
+    const list = S.uploads.get(id) || [];
+    const row = list.find((x) => x.name === name);
+    if (row) { row.state = state; row.msg = msg; } else list.push({ name, state, msg });
+    S.uploads.set(id, list);
+    refreshMedia(id);
+  }
+
+  async function uploadFiles(id, files) {
+    if (!canUpload()) { openConnect(); return; }
+    for (const file of files) {
+      const kind = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : null;
+      if (!kind) { setUpload(id, file.name, "err", "Only images and videos can be added."); continue; }
+      if (file.size > LIMITS[kind] * 1024 * 1024) {
+        setUpload(id, file.name, "err", `Too big. ${kind === "image" ? "Images" : "Videos"} can be up to ${LIMITS[kind]} MB.`); continue;
+      }
+      const path = `media/${id}/${Date.now()}-${safeName(file.name)}`;
+      try {
+        setUpload(id, file.name, "busy", "Uploading…");
+        const content = await fileToBase64(file);
+        const put = await gh(`/repos/${repo()}/contents/${path}`, { method: "PUT", body: {
+          message: `Add ${file.name} to ${get(id).node.title}`, branch: branch(), content } });
+        if (put.status === 401 || put.status === 403) throw new Error("GitHub refused the upload. Reconnect with a token that has Contents: Read and write on this repo.");
+        if (!put.ok) throw new Error(`GitHub said ${put.status}.`);
+        S.localUrls.set(path, URL.createObjectURL(file));
+        await updateManifest((data) => {
+          (data.items[id] = data.items[id] || []).push({ path, name: file.name, type: kind, size: file.size, added: new Date().toISOString(), by: (S.gh && S.gh.login) || "" });
+        }, `List ${file.name} under ${get(id).node.title}`);
+        setUpload(id, file.name, "ok", "Added. Everyone sees it once the site redeploys (about a minute).");
+      } catch (err) {
+        setUpload(id, file.name, "err", err.message);
+      }
+    }
+  }
+
+  async function removeMedia(id, path) {
+    try {
+      const r = await gh(`/repos/${repo()}/contents/${path}?ref=${branch()}`);
+      if (r.ok) {
+        const j = await r.json();
+        const d = await gh(`/repos/${repo()}/contents/${path}`, { method: "DELETE", body: { message: `Remove ${path}`, branch: branch(), sha: j.sha } });
+        if (!d.ok && d.status !== 404) throw new Error(`GitHub said ${d.status} while removing the file.`);
+      }
+      await updateManifest((data) => {
+        data.items[id] = (data.items[id] || []).filter((m) => m.path !== path);
+        if (!data.items[id].length) delete data.items[id];
+      }, `Unlist ${path}`);
+      S.uploads.delete(id);
+    } catch (err) {
+      setUpload(id, "Remove", "err", err.message);
+    }
+    S.confirmRm = null;
+    refreshMedia(id);
+  }
+
+  function mediaBlock(n, isArea) {
+    const list = mediaFor(n.id);
+    const ups = S.uploads.get(n.id) || [];
+    const shots = list.map((m) => {
+      const src = srcFor(m.path), fallback = rawUrl(m.path);
+      const view = m.type === "video"
+        ? `<video src="${esc(src)}" controls preload="metadata" playsinline onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${esc(fallback)}'}"></video>`
+        : `<img src="${esc(src)}" alt="${esc(m.name)}" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${esc(fallback)}'}"><button type="button" class="zoom" data-zoom="${esc(m.path)}" aria-label="View ${esc(m.name)} larger"></button>`;
+      const rm = canUpload() ? `<button type="button" class="rm${S.confirmRm === m.path ? " confirm" : ""}" data-rm="${esc(m.path)}" data-item="${esc(n.id)}">${S.confirmRm === m.path ? "Click again to remove" : "Remove"}</button>` : "";
+      return `<figure class="shot"><div class="shot-frame">${view}</div><figcaption><span title="${esc(m.name)}">${esc(m.name)}</span>${rm}</figcaption></figure>`;
+    }).join("");
+    let add;
+    if (canUpload()) {
+      add = `<div class="dropzone" data-drop="${esc(n.id)}">
+        <strong>Drop images or videos here</strong>
+        <span>or <label for="file-${esc(n.id)}">choose files</label><input type="file" id="file-${esc(n.id)}" data-file="${esc(n.id)}" accept="image/*,video/*" multiple></span>
+        <small>Images up to ${LIMITS.image} MB, videos up to ${LIMITS.video} MB</small>
+      </div>`;
+    } else if (onGitHubSite()) {
+      add = `<p class="media-note">${list.length ? "" : "No images or videos yet. "}<button type="button" data-connect>Connect GitHub</button> to add some.</p>`;
+    } else {
+      add = list.length ? "" : '<p class="media-note">No images or videos yet. Add them on the GitHub Pages site.</p>';
+    }
+    const upl = ups.length ? `<ul class="uploads">${ups.map((u) => `<li class="${u.state}">${esc(u.name)}: ${esc(u.msg)}</li>`).join("")}</ul>` : "";
+    return `<div class="block media" data-media="${esc(n.id)}">
+      <h4>${isArea ? "Reference images and video for this area" : "Images and video"}</h4>
+      <div class="gallery">${shots}</div>
+      ${add}${upl}
+    </div>`;
+  }
+
+  // Re-render only the media block (and the row's count) for one item, keeping scroll position.
+  function refreshMedia(id) {
+    document.querySelectorAll(`[data-media="${CSS.escape(id)}"]`).forEach((el) => {
+      const tmp = document.createElement("div");
+      const e = get(id);
+      tmp.innerHTML = mediaBlock(e.node, e.depth === 1);
+      el.replaceWith(tmp.firstElementChild);
+    });
+    const row = document.querySelector(`#i-${CSS.escape(id)} > .item-row .item-meta`);
+    if (row) {
+      const mc = mediaFor(id).length;
+      const old = row.querySelector(".media-count");
+      if (old) old.remove();
+      if (mc) row.insertAdjacentHTML("afterbegin", `<span class="media-count">${camIcon}${mc}</span>`);
+    }
+  }
+
+  function renderGhButton() {
+    const b = $("gh-btn");
+    if (!onGitHubSite() || !repo()) { b.hidden = true; return; }
+    b.hidden = false;
+    const on = !!(S.gh && S.gh.token);
+    b.title = on ? `Connected to GitHub as ${S.gh.login || "you"}. Click to disconnect.` : "Connect GitHub to add images and videos";
+    b.setAttribute("aria-label", b.title);
+    b.innerHTML = on
+      ? `<span class="dot"></span>${camIcon}<span class="gh-label">${esc(S.gh.login || "Connected")} · Disconnect</span>`
+      : `${camIcon}<span class="gh-label">Add media</span>`;
+  }
+  function openConnect() {
+    $("gh-repo").textContent = repo(); $("gh-repo-2").textContent = repo().split("/")[1] || repo();
+    $("gh-error").hidden = true; $("gh-token").value = "";
+    $("gh-dialog").showModal();
+  }
+  async function connect(token) {
+    const err = $("gh-error"), btn = $("gh-submit");
+    err.hidden = true; btn.disabled = true; btn.textContent = "Checking…";
+    try {
+      const r = await gh(`/repos/${repo()}`, { token });
+      if (r.status === 401) throw new Error("That token wasn't accepted. Copy it again from GitHub.");
+      if (!r.ok) throw new Error(`This token can't see ${repo()}. Give it access to that repo.`);
+      const j = await r.json();
+      if (j.permissions && !j.permissions.push) throw new Error("This token can read the repo but not change it. Set Contents to Read and write.");
+      let login = "";
+      try { const u = await gh("/user", { token }); if (u.ok) login = (await u.json()).login || ""; } catch (e) { /* optional */ }
+      S.gh = { token, login }; saveGh();
+      $("gh-dialog").close();
+      await loadMedia();
+      renderGhButton(); render({ keepScroll: true });
+    } catch (e) {
+      err.textContent = e.message; err.hidden = false;
+    } finally {
+      btn.disabled = false; btn.textContent = "Connect";
+    }
+  }
+
+  function bindMedia() {
+    $("gh-btn").addEventListener("click", () => {
+      if (S.gh && S.gh.token) { S.gh = null; saveGh(); renderGhButton(); render({ keepScroll: true }); }
+      else openConnect();
+    });
+    $("gh-cancel").addEventListener("click", () => $("gh-dialog").close());
+    $("gh-form").addEventListener("submit", (e) => { e.preventDefault(); const t = $("gh-token").value.trim(); if (t) connect(t); });
+    $("lightbox-close").addEventListener("click", () => $("lightbox").close());
+    $("lightbox").addEventListener("click", (e) => { if (e.target === $("lightbox")) $("lightbox").close(); });
+
+    const main = $("main");
+    main.addEventListener("dragover", (e) => {
+      const z = e.target.closest("[data-drop]");
+      if (!z) return;
+      e.preventDefault(); z.classList.add("over");
+    });
+    main.addEventListener("dragleave", (e) => { const z = e.target.closest("[data-drop]"); if (z && !z.contains(e.relatedTarget)) z.classList.remove("over"); });
+    main.addEventListener("drop", (e) => {
+      const z = e.target.closest("[data-drop]");
+      if (!z) return;
+      e.preventDefault(); z.classList.remove("over");
+      if (e.dataTransfer && e.dataTransfer.files.length) uploadFiles(z.dataset.drop, [...e.dataTransfer.files]);
+    });
+    main.addEventListener("change", (e) => {
+      const inp = e.target.closest("[data-file]");
+      if (inp && inp.files.length) { uploadFiles(inp.dataset.file, [...inp.files]); inp.value = ""; }
+    });
+    // Stop the browser from opening a file dropped anywhere else on the page.
+    window.addEventListener("dragover", (e) => { if (!e.target.closest || !e.target.closest("[data-drop]")) e.preventDefault(); });
+    window.addEventListener("drop", (e) => { if (!e.target.closest || !e.target.closest("[data-drop]")) e.preventDefault(); });
+  }
+  function handleMediaClick(e) {
+    const z = e.target.closest("[data-zoom]");
+    if (z) { const img = z.previousElementSibling; $("lightbox-img").src = img.currentSrc || img.src; $("lightbox-img").alt = img.alt; $("lightbox").showModal(); return true; }
+    if (e.target.closest("[data-connect]")) { openConnect(); return true; }
+    const rm = e.target.closest("[data-rm]");
+    if (rm) {
+      if (S.confirmRm === rm.dataset.rm) { rm.textContent = "Removing…"; removeMedia(rm.dataset.item, rm.dataset.rm); }
+      else { S.confirmRm = rm.dataset.rm; refreshMedia(rm.dataset.item); }
+      return true;
+    }
+    return false;
+  }
+
   /* ---------- routing ---------- */
   function render(opts) {
     const main = $("main");
@@ -271,6 +539,7 @@
   /* ---------- events ---------- */
   function bind() {
     $("main").addEventListener("click", (e) => {
+      if (handleMediaClick(e)) return;
       const t = e.target.closest("[data-toggle]");
       if (t) {
         const id = t.dataset.toggle;
@@ -310,13 +579,17 @@
   /* ---------- boot ---------- */
   fetch("data/plan.json", { cache: "no-cache" })
     .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-    .then((plan) => {
+    .then(async (plan) => {
       S.plan = plan;
       index(plan.root, null, 0);
       const prefs = loadPrefs();
       if (prefs && Array.isArray(prefs.open)) S.open = new Set(prefs.open.filter((id) => S.byId.has(id)));
       $("brand").textContent = plan.meta.title;
+      loadGh();
+      await loadMedia();
       bind();
+      bindMedia();
+      renderGhButton();
       go();
     })
     .catch((err) => {

@@ -28,6 +28,22 @@ GitHub Pages only serves static files, so the plan data is a JSON file in the re
 Editing the plan = editing `data/plan.json` and pushing. A bad edit fails the
 validation job and does not deploy.
 
+## Images and video
+
+Every item and area has an **Images and video** section. On the GitHub Pages site:
+
+1. Click **Add media** in the top bar.
+2. Create a fine-grained token at <https://github.com/settings/personal-access-tokens/new>:
+   - Repository access: **Only select repositories** → this repo
+   - Repository permissions: **Contents → Read and write**
+3. Paste it into the dialog. It is kept in that browser only and sent only to GitHub.
+4. Drag images or videos onto any item (or click **choose files**).
+
+Each upload is committed to `media/<item-id>/`, and listed in `data/media.json`. The site
+redeploys automatically, so everyone sees the new media about a minute later. Limits:
+images up to 10 MB, videos up to 50 MB (GitHub's API caps single files at 100 MB).
+Remove a file with **Remove** (click twice to confirm). The repo is public, so media is public.
+
 ## Edit the plan
 
 Each item in `data/plan.json` looks like this:

@@ -58,7 +58,9 @@
       "AUD": "Audio",
       "MKT": "Marketing",
       "QA": "QA and playtesting"
-    }
+    },
+    "repo": "nikhilc3/hunt-haul-roadmap",
+    "branch": "main"
   },
   "root": {
     "id": "game",
