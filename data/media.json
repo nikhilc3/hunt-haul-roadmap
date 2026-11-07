@@ -8,6 +8,292 @@
         "size": 6250433,
         "added": "2026-11-06T23:24:59.723Z",
         "by": "nikhilc3"
+      },
+      {
+        "path": "media/map-creation/quackhunters-0m05-red-orange-dirt-trail-fences-yellow-flow.mp4",
+        "name": "Quack Hunters 0m05-0m07 - Red-orange dirt trail, fences, yellow flowers, blood trail.mp4",
+        "type": "video",
+        "size": 278968,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "camera": [
+      {
+        "path": "media/camera/quackhunters-0m00-first-person-driving-duck-driver-with-re.mp4",
+        "name": "Quack Hunters 0m00-0m01 - First-person driving, duck driver with red headband, radar on the dashboard.mp4",
+        "type": "video",
+        "size": 334728,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "truck-hud": [
+      {
+        "path": "media/truck-hud/quackhunters-0m00-first-person-driving-duck-driver-with-re.mp4",
+        "name": "Quack Hunters 0m00-0m01 - First-person driving, duck driver with red headband, radar on the dashboard.mp4",
+        "type": "video",
+        "size": 334728,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/truck-hud/quackhunters-0m14-shooting-a-boar-out-of-the-truck-window.mp4",
+        "name": "Quack Hunters 0m14 - Shooting a boar out of the truck window.mp4",
+        "type": "video",
+        "size": 255759,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "avatar": [
+      {
+        "path": "media/avatar/quackhunters-0m00-first-person-driving-duck-driver-with-re.mp4",
+        "name": "Quack Hunters 0m00-0m01 - First-person driving, duck driver with red headband, radar on the dashboard.mp4",
+        "type": "video",
+        "size": 334728,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/avatar/quackhunters-0m30-two-duck-players-in-co-op-beside-a-full.mp4",
+        "name": "Quack Hunters 0m30-0m32 - Two duck players in co-op beside a full truck.mp4",
+        "type": "video",
+        "size": 148348,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "roster": [
+      {
+        "path": "media/roster/quackhunters-0m02-shotgun-vs-a-big-eyed-beaver-like-critte.mp4",
+        "name": "Quack Hunters 0m02-0m03 - Shotgun vs a big-eyed beaver-like critter in tall grass.mp4",
+        "type": "video",
+        "size": 487001,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/roster/quackhunters-0m04-white-rabbit-running-away.mp4",
+        "name": "Quack Hunters 0m04 - White rabbit running away.mp4",
+        "type": "video",
+        "size": 279280,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/roster/quackhunters-0m10-rifle-scope-overlay-on-a-deer.mp4",
+        "name": "Quack Hunters 0m10-0m11 - Rifle scope overlay on a deer.mp4",
+        "type": "video",
+        "size": 304534,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/roster/quackhunters-0m12-dark-horned-beast-shot-big-blood-burst.mp4",
+        "name": "Quack Hunters 0m12-0m13 - Dark horned beast shot, big blood burst.mp4",
+        "type": "video",
+        "size": 725226,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/roster/quackhunters-0m15-farmyard-chickens-fat-sheep-wooden-sign.mp4",
+        "name": "Quack Hunters 0m15-0m16 - Farmyard, chickens, fat sheep, wooden sign, blood.mp4",
+        "type": "video",
+        "size": 580060,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "gun-framework": [
+      {
+        "path": "media/gun-framework/quackhunters-0m02-shotgun-vs-a-big-eyed-beaver-like-critte.mp4",
+        "name": "Quack Hunters 0m02-0m03 - Shotgun vs a big-eyed beaver-like critter in tall grass.mp4",
+        "type": "video",
+        "size": 487001,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/gun-framework/quackhunters-0m08-wooden-gun-rack-with-a-scoped-rifle-rifl.mp4",
+        "name": "Quack Hunters 0m08-0m09 - Wooden gun rack with a scoped rifle, rifle dropped on grass.mp4",
+        "type": "video",
+        "size": 307637,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/gun-framework/quackhunters-0m23-assault-rifle-on-the-dirt-road.mp4",
+        "name": "Quack Hunters 0m23-0m25 - Assault rifle on the dirt road.mp4",
+        "type": "video",
+        "size": 637361,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "behaviour": [
+      {
+        "path": "media/behaviour/quackhunters-0m04-white-rabbit-running-away.mp4",
+        "name": "Quack Hunters 0m04 - White rabbit running away.mp4",
+        "type": "video",
+        "size": 279280,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "roads": [
+      {
+        "path": "media/roads/quackhunters-0m05-red-orange-dirt-trail-fences-yellow-flow.mp4",
+        "name": "Quack Hunters 0m05-0m07 - Red-orange dirt trail, fences, yellow flowers, blood trail.mp4",
+        "type": "video",
+        "size": 278968,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/roads/quackhunters-0m26-truck-jumping-off-a-flat-panel-ramp-good.mp4",
+        "name": "Quack Hunters 0m26-0m28 - Truck jumping off a flat panel ramp, good sky shot.mp4",
+        "type": "video",
+        "size": 451340,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "shop": [
+      {
+        "path": "media/shop/quackhunters-0m08-wooden-gun-rack-with-a-scoped-rifle-rifl.mp4",
+        "name": "Quack Hunters 0m08-0m09 - Wooden gun rack with a scoped rifle, rifle dropped on grass.mp4",
+        "type": "video",
+        "size": 307637,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "aiming": [
+      {
+        "path": "media/aiming/quackhunters-0m10-rifle-scope-overlay-on-a-deer.mp4",
+        "name": "Quack Hunters 0m10-0m11 - Rifle scope overlay on a deer.mp4",
+        "type": "video",
+        "size": 304534,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "combat-feel": [
+      {
+        "path": "media/combat-feel/quackhunters-0m12-dark-horned-beast-shot-big-blood-burst.mp4",
+        "name": "Quack Hunters 0m12-0m13 - Dark horned beast shot, big blood burst.mp4",
+        "type": "video",
+        "size": 725226,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "maturity": [
+      {
+        "path": "media/maturity/quackhunters-0m12-dark-horned-beast-shot-big-blood-burst.mp4",
+        "name": "Quack Hunters 0m12-0m13 - Dark horned beast shot, big blood burst.mp4",
+        "type": "video",
+        "size": 725226,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "coop": [
+      {
+        "path": "media/coop/quackhunters-0m14-shooting-a-boar-out-of-the-truck-window.mp4",
+        "name": "Quack Hunters 0m14 - Shooting a boar out of the truck window.mp4",
+        "type": "video",
+        "size": 255759,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/coop/quackhunters-0m30-two-duck-players-in-co-op-beside-a-full.mp4",
+        "name": "Quack Hunters 0m30-0m32 - Two duck players in co-op beside a full truck.mp4",
+        "type": "video",
+        "size": 148348,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "zones": [
+      {
+        "path": "media/zones/quackhunters-0m15-farmyard-chickens-fat-sheep-wooden-sign.mp4",
+        "name": "Quack Hunters 0m15-0m16 - Farmyard, chickens, fat sheep, wooden sign, blood.mp4",
+        "type": "video",
+        "size": 580060,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "vehicle": [
+      {
+        "path": "media/vehicle/quackhunters-0m18-brown-and-orange-pickup-boar-carcasses-t.mp4",
+        "name": "Quack Hunters 0m18-0m20 - Brown and orange pickup, boar carcasses thrown into the bed.mp4",
+        "type": "video",
+        "size": 545938,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "truck-cargo": [
+      {
+        "path": "media/truck-cargo/quackhunters-0m18-brown-and-orange-pickup-boar-carcasses-t.mp4",
+        "name": "Quack Hunters 0m18-0m20 - Brown and orange pickup, boar carcasses thrown into the bed.mp4",
+        "type": "video",
+        "size": 545938,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      },
+      {
+        "path": "media/truck-cargo/quackhunters-0m30-two-duck-players-in-co-op-beside-a-full.mp4",
+        "name": "Quack Hunters 0m30-0m32 - Two duck players in co-op beside a full truck.mp4",
+        "type": "video",
+        "size": 148348,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "carry": [
+      {
+        "path": "media/carry/quackhunters-0m18-brown-and-orange-pickup-boar-carcasses-t.mp4",
+        "name": "Quack Hunters 0m18-0m20 - Brown and orange pickup, boar carcasses thrown into the bed.mp4",
+        "type": "video",
+        "size": 545938,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "barn": [
+      {
+        "path": "media/barn/quackhunters-0m21-inside-the-red-barn-armchair-radiator-th.mp4",
+        "name": "Quack Hunters 0m21-0m22 - Inside the red barn, armchair, radiator, the shredder machine.mp4",
+        "type": "video",
+        "size": 162868,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "shredder": [
+      {
+        "path": "media/shredder/quackhunters-0m21-inside-the-red-barn-armchair-radiator-th.mp4",
+        "name": "Quack Hunters 0m21-0m22 - Inside the red barn, armchair, radiator, the shredder machine.mp4",
+        "type": "video",
+        "size": 162868,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
+      }
+    ],
+    "lighting": [
+      {
+        "path": "media/lighting/quackhunters-0m26-truck-jumping-off-a-flat-panel-ramp-good.mp4",
+        "name": "Quack Hunters 0m26-0m28 - Truck jumping off a flat panel ramp, good sky shot.mp4",
+        "type": "video",
+        "size": 451340,
+        "added": "2026-11-07T02:29:41.000Z",
+        "by": "claude"
       }
     ]
   }

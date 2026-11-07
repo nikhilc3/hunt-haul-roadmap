@@ -63,7 +63,7 @@
     "branch": "main",
     "references": [
       {
-        "title": "Quack Hunters trailer (the only clip so far, filed under Map creation)",
+        "title": "Quack Hunters trailer (full clip under Map creation; each moment below is also cut into its own clip on the linked items)",
         "file": "media/map-creation/1794007496879-wf3eqq3w.mp4",
         "beats": [
           [
@@ -326,8 +326,7 @@
               }
             ],
             "gaps": [
-              "The Blender file (AlpineValley_Optimized) is not in the repo or linked anywhere, so Claude cannot see the map. Add the file location, a top-down render with a stud grid, and 4 to 6 screenshots from player height.",
-              "The one uploaded clip is filed here but it covers the whole game (truck, animals, guns, barn, co-op). See the clip breakdown on the Missing page and file timestamps under the right items."
+              "The Blender file (AlpineValley_Optimized) is not in the repo or linked anywhere, so Claude cannot see the map. Add the file location, a top-down render with a stud grid, and 4 to 6 screenshots from player height."
             ]
           },
           {
