@@ -70,6 +70,9 @@ Each item in `data/plan.json` looks like this:
 }
 ```
 
+- `gaps` (optional): what Claude still needs before it can build this item 1:1 (a decision,
+  a number, or a reference). Shown in red on the item and collected on the **Missing for 1:1** page.
+  Delete a line once it's answered.
 - `status`: `planned` | `in-progress` | `blocked` | `done`
 - `priority`: `P0` must have | `P1` should have | `P2` nice to have
 - `phase`: 1–7, defined in `meta.phases`

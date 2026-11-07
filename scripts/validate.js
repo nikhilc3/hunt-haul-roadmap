@@ -27,6 +27,7 @@ function walk(node, trail) {
   if (!PRIORITIES.includes(node.priority)) errors.push(`${where}: priority "${node.priority}" not in ${PRIORITIES.join(", ")}`);
   if (!phaseIds.has(node.phase)) errors.push(`${where}: phase ${node.phase} is not defined in meta.phases`);
   if (!owners.has(node.owner)) errors.push(`${where}: owner "${node.owner}" is not defined in meta.owners`);
+  if (node.gaps !== undefined && (!Array.isArray(node.gaps) || node.gaps.some((g) => typeof g !== "string" || !g))) errors.push(`${where}: "gaps" must be a list of non-empty strings`);
   for (const d of node.dependsOn || []) deps.push([where, d]);
   for (const child of node.children || []) walk(child, [...trail, node.id]);
 }

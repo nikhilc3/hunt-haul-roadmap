@@ -80,6 +80,7 @@
       <div class="nav-group">
         ${item("overview", "Overview", "", cur === "overview")}
         ${item("timeline", "Build order", "", cur === "timeline")}
+        ${item("gaps", "Missing for 1:1", `<span class="dot blocked"></span>`, cur === "gaps")}
       </div>
       <div class="nav-group">
         <div class="nav-label">Areas</div>
@@ -110,6 +111,7 @@
           <div class="stat"><b>${all.length}</b><span>items</span></div>
           <div class="stat"><b>${areas().length}</b><span>areas</span></div>
           <div class="stat"><b>${m.phases.length}</b><span>phases</span></div>
+          <a class="stat stat-gaps" href="#gaps"><b>${allGapNodes().reduce((a, n) => a + n.gaps.length, 0)}</b><span>missing for 1:1 →</span></a>
           ${(() => { const m2 = /(\d+)\s*weeks?/.exec(S.plan.root.estimate || ""); return m2 ? `<div class="stat"><b>~${m2[1]}</b><span>weeks to soft launch</span></div>` : ""; })()}
         </div>
         ${bar(c)}
@@ -140,12 +142,40 @@
     </div>`;
   }
 
+  /* ---------- gaps: what Claude still needs before it can build an item 1:1 ---------- */
+  function gapsBlock(n) {
+    const g = n.gaps || [];
+    return g.length ? `<div class="gaps"><strong>Missing before Claude can build this 1:1</strong><ul>${g.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "";
+  }
+  const allGapNodes = () => [...S.byId.values()].map((e) => e.node).filter((n) => (n.gaps || []).length);
+  function renderGaps() {
+    const nodes = allGapNodes(), total = nodes.reduce((a, n) => a + n.gaps.length, 0);
+    const refs = S.plan.meta.references || [];
+    const link = (id) => get(id) ? `<a class="link" href="#${esc(id)}">${esc(get(id).node.title)}</a>` : "";
+    const group = (title, list) => list.length ? `<section><div class="section-head"><h2>${esc(title)}</h2></div>
+      ${list.map((n) => `<div class="gap-item"><a class="gap-title" href="#${esc(n.id)}">${esc(n.title)}</a>${n.priority === "P0" ? ' <span class="must">Must</span>' : ""}
+        <ul>${n.gaps.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`).join("")}</section>` : "";
+    const root = nodes.filter((n) => n.id === S.plan.root.id);
+    return `<div class="page">
+      <section>
+        <div class="crumbs"><a href="#overview">Overview</a> / Missing for a 1:1 build</div>
+        <h1 class="area-title">Missing for a 1:1 build</h1>
+        <p class="lede">${total} things across ${nodes.length} items that Claude would have to guess at today. Fill these in (a decision, a number, or a reference image/video) and delete the line from <code>gaps</code> in plan.json.</p>
+      </section>
+      ${group("Whole game", root)}
+      ${areas().map((a) => group(a.title, [a, ...descendants(a)].filter((n) => (n.gaps || []).length))).join("")}
+      ${refs.map((r) => `<section><div class="section-head"><h2>Reference: ${esc(r.title)}</h2><p>Which item each moment of the clip is a reference for.</p></div>
+        <ul class="rows">${r.beats.map(([t, what, ids]) => `<li><div class="ref-beat"><span class="ref-t">${esc(t)}</span><span class="t">${esc(what)}<span class="ref-links">${ids.map(link).join("")}</span></span></div></li>`).join("")}</ul></section>`).join("")}
+    </div>`;
+  }
+
   /* ---------- area page + accordion ---------- */
   function itemHTML(n, depth) {
     const open = S.open.has(n.id);
     const kids = n.children || [];
     const mc = mediaFor(n.id).length;
     const meta = [
+      (n.gaps || []).length ? `<span class="gap-count" title="${n.gaps.length} thing${n.gaps.length === 1 ? "" : "s"} missing before Claude can build this 1:1">${n.gaps.length} missing</span>` : "",
       mc ? `<span class="media-count" title="${mc} image${mc === 1 ? "" : "s"} or video${mc === 1 ? "" : "s"}">${camIcon}${mc}</span>` : "",
       n.priority === "P0" ? '<span class="must">Must</span>' : "",
       n.status !== "planned" ? chip(n.status) : "",
@@ -175,6 +205,7 @@
         ${n.estimate ? `<span>${esc(n.estimate)}</span>` : ""}
       </div>
       ${n.notes ? `<div class="callout"><strong>Note</strong>${esc(n.notes)}</div>` : ""}
+      ${gapsBlock(n)}
       ${mediaBlock(n)}
       ${n.deliverables && n.deliverables.length ? `<div class="block"><h4>What gets built</h4><ul class="checks">${n.deliverables.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
       ${n.acceptance && n.acceptance.length ? `<div class="block"><h4>Done when</h4><ul class="checks done-when">${n.acceptance.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
@@ -243,7 +274,7 @@
   function renderSearch() {
     const q = S.q.toLowerCase();
     const hits = [...S.byId.values()].filter((e) => e.depth >= 1).map((e) => e.node).filter((n) =>
-      [n.title, n.summary, n.notes, ...(n.deliverables || []), ...(n.acceptance || [])].join(" ").toLowerCase().includes(q));
+      [n.title, n.summary, n.notes, ...(n.deliverables || []), ...(n.acceptance || []), ...(n.gaps || [])].join(" ").toLowerCase().includes(q));
     return `<div class="page">
       <section><div class="crumbs">Search</div><h1 class="area-title">“${esc(S.q)}”</h1><p class="lede">${hits.length} ${hits.length === 1 ? "result" : "results"}</p></section>
       <ul class="rows">${hits.length ? hits.map((n) => {
@@ -592,6 +623,7 @@
     let html, focus = null;
     if (S.q) html = renderSearch();
     else if (S.route === "timeline" || S.route.startsWith("phase-")) html = renderTimeline();
+    else if (S.route === "gaps") html = renderGaps();
     else if (get(S.route) && get(S.route).depth >= 1) {
       const a = areaOf(S.route);
       if (S.route !== a.id) { chain(S.route).forEach((x) => S.open.add(x.id)); S.open.add(S.route); focus = S.route; savePrefs(); }
@@ -609,7 +641,7 @@
   }
   function go() {
     const h = decodeURIComponent(location.hash.slice(1));
-    S.route = h && (S.byId.has(h) || h === "timeline" || /^phase-\d+$/.test(h)) ? h : "overview";
+    S.route = h && (S.byId.has(h) || h === "timeline" || h === "gaps" || /^phase-\d+$/.test(h)) ? h : "overview";
     if (S.route === S.plan.root.id) S.route = "overview";
     render();
   }

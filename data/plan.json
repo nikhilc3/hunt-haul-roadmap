@@ -2,7 +2,7 @@
   "meta": {
     "title": "Hunt & Haul",
     "subtitle": "An open-world Roblox hunting game. Drive out in your truck, hunt animals and bosses, haul the carcasses and eggs home, shred them for coins, hatch the eggs, and upgrade.",
-    "version": "0.2",
+    "version": "0.3",
     "updated": "2026-11-06",
     "loop": [
       "Drive out",
@@ -60,7 +60,130 @@
       "QA": "QA and playtesting"
     },
     "repo": "nikhilc3/hunt-haul-roadmap",
-    "branch": "main"
+    "branch": "main",
+    "references": [
+      {
+        "title": "Quack Hunters trailer (the only clip so far, filed under Map creation)",
+        "file": "media/map-creation/1794007496879-wf3eqq3w.mp4",
+        "beats": [
+          [
+            "0:00–0:01",
+            "First-person driving, duck driver with red headband, radar on the dashboard",
+            [
+              "camera",
+              "truck-hud",
+              "avatar"
+            ]
+          ],
+          [
+            "0:02–0:03",
+            "Shotgun vs a big-eyed beaver-like critter in tall grass",
+            [
+              "roster",
+              "gun-framework"
+            ]
+          ],
+          [
+            "0:04",
+            "White rabbit running away",
+            [
+              "roster",
+              "behaviour"
+            ]
+          ],
+          [
+            "0:05–0:07",
+            "Red-orange dirt trail, fences, yellow flowers, blood trail",
+            [
+              "roads",
+              "map-creation"
+            ]
+          ],
+          [
+            "0:08–0:09",
+            "Wooden gun rack with a scoped rifle, rifle dropped on grass",
+            [
+              "shop",
+              "gun-framework"
+            ]
+          ],
+          [
+            "0:10–0:11",
+            "Rifle scope overlay on a deer",
+            [
+              "aiming",
+              "roster"
+            ]
+          ],
+          [
+            "0:12–0:13",
+            "Dark horned beast shot, big blood burst",
+            [
+              "roster",
+              "combat-feel",
+              "maturity"
+            ]
+          ],
+          [
+            "0:14",
+            "Shooting a boar out of the truck window",
+            [
+              "truck-hud",
+              "coop"
+            ]
+          ],
+          [
+            "0:15–0:16",
+            "Farmyard: chickens, fat sheep, wooden sign, blood",
+            [
+              "roster",
+              "zones"
+            ]
+          ],
+          [
+            "0:18–0:20",
+            "Brown and orange pickup, boar carcasses thrown into the bed",
+            [
+              "vehicle",
+              "truck-cargo",
+              "carry"
+            ]
+          ],
+          [
+            "0:21–0:22",
+            "Inside the red barn: armchair, radiator, the shredder machine",
+            [
+              "barn",
+              "shredder"
+            ]
+          ],
+          [
+            "0:23–0:25",
+            "Assault rifle on the dirt road",
+            [
+              "gun-framework"
+            ]
+          ],
+          [
+            "0:26–0:28",
+            "Truck jumping off a flat panel ramp, good sky shot",
+            [
+              "roads",
+              "lighting"
+            ]
+          ],
+          [
+            "0:30–0:32",
+            "Two duck players in co-op beside a full truck",
+            [
+              "coop",
+              "truck-cargo",
+              "avatar"
+            ]
+          ]
+        ]
+      }
+    ]
   },
   "root": {
     "id": "game",
@@ -201,6 +324,10 @@
                   "The importer rescales meshes over 2048 studs"
                 ]
               }
+            ],
+            "gaps": [
+              "The Blender file (AlpineValley_Optimized) is not in the repo or linked anywhere, so Claude cannot see the map. Add the file location, a top-down render with a stud grid, and 4 to 6 screenshots from player height.",
+              "The one uploaded clip is filed here but it covers the whole game (truck, animals, guns, barn, co-op). See the clip breakdown on the Missing page and file timestamps under the right items."
             ]
           },
           {
@@ -243,7 +370,12 @@
                   "Each zone has 8 or more spawn points"
                 ],
                 "dependsOn": [],
-                "risks": []
+                "risks": [],
+                "gaps": [
+                  "No top-down zone map. Need an image with each zone drawn on it and its stud bounds or centre + radius.",
+                  "Ducks are listed as prey at the riverbank but the player is a duck. Decide: cut ducks, or keep it as a joke on purpose.",
+                  "The clip shows a sheep, a big-eyed beaver-like critter and a dark horned beast that are in no zone list. Decide if they are in the game."
+                ]
               },
               {
                 "id": "roads",
@@ -262,7 +394,11 @@
                   "The truck reaches every zone without getting stuck"
                 ],
                 "dependsOn": [],
-                "risks": []
+                "risks": [],
+                "gaps": [
+                  "No ramp reference besides clip 0:26 to 0:28 (truck jumping a flat panel ramp). Need ramp size, angle and where each one goes.",
+                  "Road and trail look not specified: width in studs, materials and colours (the clip uses red-orange dirt trails and a grey paved road)."
+                ]
               },
               {
                 "id": "pois",
@@ -280,7 +416,10 @@
                 "dependsOn": [
                   "zones"
                 ],
-                "risks": []
+                "risks": [],
+                "gaps": [
+                  "No reference images for hunting stands, ammo caches, dynamite crates or lookouts. The clock tower is not in the Blender scene at all."
+                ]
               },
               {
                 "id": "boss-arenas",
@@ -300,7 +439,10 @@
                 "dependsOn": [
                   "zones"
                 ],
-                "risks": []
+                "risks": [],
+                "gaps": [
+                  "No layout sketch or size for any arena. Need a top-down sketch per arena with entry point and cover."
+                ]
               }
             ]
           },
@@ -342,7 +484,10 @@
               "A new player can find the barn again from anywhere"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No mockup for the compass, radar or full map screen. Only reference is the dashboard radar in clip 0:00 and 0:14."
+            ]
           },
           {
             "id": "lighting",
@@ -361,7 +506,10 @@
               "Matches the reference clips side by side"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "\"Matches the reference clips\" is not buildable. Need target screenshots (clip 0:21, 0:26 are good sky shots) or actual Lighting values: time of day, brightness, atmosphere, colour correction."
+            ]
           },
           {
             "id": "day-night",
@@ -380,6 +528,9 @@
             "dependsOn": [],
             "risks": [
               "Night too dark on low-brightness phones"
+            ],
+            "gaps": [
+              "Cycle length (minutes of day vs night) not set. How dark night gets not set. Which animals are night-only not named."
             ]
           },
           {
@@ -443,7 +594,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No interior reference besides clip 0:21 (red barn, armchair, radiator, the shredder machine inside). Need an interior layout: what is inside and where."
+            ]
           },
           {
             "id": "hatch-pen",
@@ -465,7 +619,10 @@
             "dependsOn": [
               "eggs"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No reference for what the egg slot pads or incubators look like. Starting slot count not set."
+            ]
           },
           {
             "id": "shredder",
@@ -488,7 +645,11 @@
             "dependsOn": [
               "shred-value"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No look reference besides the machine in clip 0:21. Need a model reference and a description of the feed animation (what you see when a carcass goes in, how coins come out).",
+              "Shred time per carcass not set."
+            ]
           },
           {
             "id": "unload",
@@ -508,7 +669,10 @@
               "truck-cargo",
               "shredder"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Transfer animation not described: do carcasses fly, slide on a conveyor, or get carried by the player?"
+            ]
           },
           {
             "id": "plots",
@@ -546,8 +710,14 @@
             "dependsOn": [
               "shop"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Number of tiers and price of each tier not set. The 3 barn paint colours are not picked."
+            ]
           }
+        ],
+        "gaps": [
+          "Contradiction: one plot per player (up to 8) but the map has one barn and one farmyard. Decide where 8 bases go on the map, or switch to one shared barn. Need a layout image either way."
         ]
       },
       {
@@ -579,7 +749,13 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Big decision missing: is every player forced into the duck, or do Roblox avatars get a duck costume on top?",
+              "No turnaround (front, side, back) for our duck. The clip duck is the Quack Hunters design (white duck, orange beak, red headband, olive shirt), so we need our own version.",
+              "No reference for any of the 8 animations. The carry pose especially: over the shoulder, held in front, or dragged?",
+              "Rig type not set (R15, R6 or custom)."
+            ]
           },
           {
             "id": "camera",
@@ -597,7 +773,11 @@
               "Switches cleanly when getting in and out of the truck"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Conflict: the plan says third person in the truck, but the clip drives in first person with arms on the wheel (0:00). Pick one.",
+              "Field of view and third-person camera offset not set."
+            ]
           },
           {
             "id": "movement",
@@ -613,7 +793,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No numbers: walk speed, sprint speed, stamina length and regen, jump height, slowdown when carrying."
+            ]
           },
           {
             "id": "health",
@@ -632,7 +815,10 @@
               "You never lose loaded cargo by dying"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Player max HP, damage per animal attack and respawn time not set."
+            ]
           },
           {
             "id": "inventory",
@@ -649,7 +835,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Number of hotbar slots and layout not set."
+            ]
           },
           {
             "id": "carry",
@@ -671,7 +860,10 @@
             "dependsOn": [
               "truck-cargo"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Which items count as heavy is not listed (does a chicken carcass count?)."
+            ]
           }
         ]
       },
@@ -716,7 +908,10 @@
               "Doesn't flip on normal turns"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No target numbers or feel: top speed, acceleration, arcade vs realistic. Add a reference clip of driving that feels right."
+            ]
           },
           {
             "id": "truck-seats",
@@ -732,7 +927,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Number of seats not set (2? 4?)."
+            ]
           },
           {
             "id": "truck-cargo",
@@ -753,7 +951,10 @@
             "dependsOn": [
               "truck-physics"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "How items sit in the bed is not shown. 6 slots fits chickens, but does a boar or bison take 1 slot or several? Add a sketch of a full bed (clip 0:30 is a good reference)."
+            ]
           },
           {
             "id": "truck-hud",
@@ -769,7 +970,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "What the radar shows (animals, players, the barn, bosses) is not decided. No mockup."
+            ]
           },
           {
             "id": "truck-recover",
@@ -804,7 +1008,10 @@
             "dependsOn": [
               "shop"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No tiers, numbers or prices for engine, tyres and bed."
+            ]
           },
           {
             "id": "truck-skins",
@@ -822,8 +1029,15 @@
             "dependsOn": [
               "cosmetics"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "None of the 8 skins are designed or described."
+            ]
           }
+        ],
+        "gaps": [
+          "The \"existing driving scripts\" are not in the repo or linked. Claude can't port what it can't see. Add the files or their location.",
+          "No truck model reference or size in studs. Clip shows a brown and orange pickup with a black hood (0:18). Build our own or buy one?"
         ]
       },
       {
@@ -861,7 +1075,12 @@
               "A new gun can be added with config only"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No gun stats at all: damage, fire rate, magazine, reload time, range, price. Need a full table for every launch gun.",
+              "Gun list doesn't match the clip. Plan says pistol, shotgun, rifle. Clip shows a shotgun (0:02), a scoped bolt-action rifle on a rack (0:08) and an assault rifle (0:12, 0:30). Decide the launch list.",
+              "No model references for any gun."
+            ]
           },
           {
             "id": "aiming",
@@ -877,7 +1096,10 @@
             "dependsOn": [
               "gun-framework"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Zoom amount for aim-down-sights and the scope not set. Scope reference is clip 0:10."
+            ]
           },
           {
             "id": "hit-detect",
@@ -914,7 +1136,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Ammo types, prices and what a cache contains not set."
+            ]
           },
           {
             "id": "dynamite",
@@ -930,7 +1155,10 @@
               "Doesn't damage the map"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Damage, blast radius, fuse time and model reference not set."
+            ]
           },
           {
             "id": "combat-feel",
@@ -944,7 +1172,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Blood level not decided. The clip uses big red blood bursts (0:12, 0:15). This ties directly to the maturity rating."
+            ]
           },
           {
             "id": "melee",
@@ -958,7 +1189,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Bat damage, swing speed and model reference not set. The plan says \"as in the reference clip\" but no bat appears in the uploaded clip."
+            ]
           },
           {
             "id": "weapon-skins",
@@ -976,7 +1210,10 @@
             "dependsOn": [
               "cosmetics"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "None of the 6 skins are designed or described."
+            ]
           }
         ]
       },
@@ -1013,7 +1250,16 @@
             "acceptance": [],
             "dependsOn": [],
             "risks": [],
-            "notes": "Suggested tiers: Common (chicken, rabbit), Uncommon (duck, goat), Rare (deer, boar), Epic (bull, bison), Legendary (night-only animals)."
+            "notes": "Suggested tiers: Common (chicken, rabbit), Uncommon (duck, goat), Rare (deer, boar), Epic (bull, bison), Legendary (night-only animals).",
+            "gaps": [
+              "This is the biggest gap. There is no final animal list. Zones name 6 animals, the tier note adds bull, bison and unnamed night animals, and the clip adds sheep, a beaver-like critter and a horned beast. Lock one list.",
+              "For each animal need: rarity, zone, HP, speed, damage (if it attacks), coin value, weight, egg type and egg drop chance, size in studs.",
+              "Spawn odds per rarity tier not set (e.g. Common 60%, Uncommon 25%...).",
+              "No visual reference per animal. Need front and side images in our style (the clip style is cartoon with big googly eyes, see 0:02 and 0:16).",
+              "No movement references. Need a real-life gait video per animal (rabbit hop, deer bound, boar charge, chicken scurry) plus how exaggerated the cartoon version should be.",
+              "No animation list per animal. Minimum: idle, graze, walk, run or flee, hit react, death, plus attack for aggressive ones.",
+              "Night-only legendary animals are not named."
+            ]
           },
           {
             "id": "spawner",
@@ -1031,7 +1277,10 @@
             "dependsOn": [
               "roster"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Respawn timers and per-zone animal caps not set."
+            ]
           },
           {
             "id": "behaviour",
@@ -1047,7 +1296,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No per-animal behaviour table: passive, skittish or aggressive; how close you can get before it notices; how far it flees; charge damage."
+            ]
           },
           {
             "id": "death-drops",
@@ -1065,7 +1317,11 @@
             "dependsOn": [
               "behaviour"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Real ragdoll or a canned death animation not decided (ragdolls cost server performance).",
+              "What a carcass looks like not set (whole body like clip 0:18 or a bag/crate?). What the egg looks like when it drops not set."
+            ]
           },
           {
             "id": "hitzones",
@@ -1079,7 +1335,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Headshot multiplier not set."
+            ]
           },
           {
             "id": "rare-spawns",
@@ -1098,7 +1357,10 @@
               "spawner",
               "day-night"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Rare spawn odds and the announcement wording/look not set."
+            ]
           },
           {
             "id": "bosses",
@@ -1121,7 +1383,10 @@
               "behaviour"
             ],
             "risks": [],
-            "notes": "Ideas: a giant boar in the forest, an alpha moose in the gorge, a mega goose by the river."
+            "notes": "Ideas: a giant boar in the forest, an alpha moose in the gorge, a mega goose by the river.",
+            "gaps": [
+              "Bosses are three one-line ideas. For each one need: concept images, size, HP, attack list with tells, phases, arena, rewards and the rare egg."
+            ]
           }
         ]
       },
@@ -1159,7 +1424,10 @@
             "dependsOn": [
               "roster"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Coins per animal table missing."
+            ]
           },
           {
             "id": "economy-sheet",
@@ -1177,7 +1445,10 @@
               "Every upgrade tier is 10 to 30 minutes of play apart"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Sheet doesn't exist yet. Need coins per hour at each stage and the price of every upgrade."
+            ]
           },
           {
             "id": "eggs",
@@ -1193,7 +1464,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Egg types, what each looks like, hatch times and odds of each pet are not set."
+            ]
           },
           {
             "id": "pets",
@@ -1213,7 +1487,11 @@
             "dependsOn": [
               "eggs"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No pet list. Are pets baby versions of the hunted animals or something else? Need each pet's look, rarity and exact buff.",
+              "How pets follow you (float, walk, hop) not described."
+            ]
           },
           {
             "id": "shop",
@@ -1227,7 +1505,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No item list with prices. Where the shop is (NPC, board in the barn, menu only) not decided. The clip has a gun rack at 0:08 that could be the reference."
+            ]
           },
           {
             "id": "levels",
@@ -1241,7 +1522,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "XP per kill, the XP curve and what each level unlocks not set."
+            ]
           },
           {
             "id": "rebirth",
@@ -1255,7 +1539,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "What resets, what you keep, the multiplier and the cost not set."
+            ]
           },
           {
             "id": "index",
@@ -1269,8 +1556,14 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No layout mockup."
+            ]
           }
+        ],
+        "gaps": [
+          "There are no numbers anywhere in the economy. Nothing in this area can be built 1:1 until the economy sheet exists."
         ]
       },
       {
@@ -1316,7 +1609,10 @@
               "Playable within 10 seconds on a phone"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No logo or loading screen art."
+            ]
           },
           {
             "id": "tutorial-steps",
@@ -1391,7 +1687,10 @@
             "dependsOn": [
               "eggs"
             ],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Coin amount and which starter egg not set."
+            ]
           },
           {
             "id": "tips",
@@ -1458,7 +1757,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Contents of each of the 7 days not set."
+            ]
           },
           {
             "id": "quests",
@@ -1475,7 +1777,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Quest pool not written."
+            ]
           },
           {
             "id": "badges",
@@ -1491,7 +1796,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "The 10 launch badges not listed."
+            ]
           },
           {
             "id": "leaderboards",
@@ -1554,7 +1862,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No event list or holiday animal ideas."
+            ]
           },
           {
             "id": "updates",
@@ -1631,7 +1942,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Boost amount not set. The plan cites \"the reference game\" for Friend Boost but doesn't say which game."
+            ]
           },
           {
             "id": "private-servers",
@@ -1745,7 +2059,10 @@
               "Ownership is checked every time a player joins"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No prices for any pass. VIP area and luck bonus amount not described."
+            ]
           },
           {
             "id": "dev-products",
@@ -1765,7 +2082,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No prices or amounts (coin pack sizes, bundle sizes)."
+            ]
           },
           {
             "id": "paid-eggs",
@@ -1818,7 +2138,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No duck hats listed or designed."
+            ]
           },
           {
             "id": "premium",
@@ -1932,7 +2255,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No font, button style, colour palette or rarity colours picked. No reference screenshots of UI we like."
+            ]
           },
           {
             "id": "hud",
@@ -1946,7 +2272,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No HUD mockup for PC or mobile."
+            ]
           },
           {
             "id": "menus",
@@ -1960,7 +2289,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No mockups for any menu."
+            ]
           },
           {
             "id": "settings-menu",
@@ -2002,7 +2334,10 @@
             "deliverables": [],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No button layout mockup."
+            ]
           },
           {
             "id": "console",
@@ -2235,6 +2570,9 @@
             "dependsOn": [],
             "risks": []
           }
+        ],
+        "gaps": [
+          "No sound or music references (example tracks, the vibe)."
         ]
       },
       {
@@ -2270,7 +2608,10 @@
             ],
             "acceptance": [],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "Blood level decision not made (see Combat feel). The clip's blood amount likely pushes the age rating up."
+            ]
           },
           {
             "id": "text-filter",
@@ -2362,7 +2703,10 @@
               "Icon readable at small size"
             ],
             "dependsOn": [],
-            "risks": []
+            "risks": [],
+            "gaps": [
+              "No icon or thumbnail concepts."
+            ]
           },
           {
             "id": "game-page",
@@ -2533,6 +2877,12 @@
           }
         ]
       }
+    ],
+    "gaps": [
+      "The reference game is never named in the plan. The only clip is the Quack Hunters Steam trailer (33 s of trailer cuts). Log the game name and store link, and add longer raw gameplay footage (a full session, not a trailer).",
+      "No art style guide: colour palette (hex codes), smooth vs low-poly, outlines or not, character proportions. Without it every model Claude makes will drift toward a generic Roblox look.",
+      "No line drawn on how close we copy Quack Hunters (duck with red headband, the truck, the barn shredder). A 1:1 visual copy on Roblox is a takedown risk. Decide what we keep and what we change.",
+      "Final game name not confirmed (\"Hunt & Haul\" is used as if final)."
     ]
   }
 }
